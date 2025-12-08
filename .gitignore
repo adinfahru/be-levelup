@@ -1,0 +1,77 @@
+# .NET build output
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+*.sln.iml
+
+# ASP.NET Core secrets
+secrets.json
+
+# IIS Express
+*.vspscc
+.vs/
+
+# Logs
+*.log
+
+# NuGet packages
+*.nupkg
+# NuGet restore
+.nuget/
+
+# Others
+*.dbmdl
+*.dbproj
+*.pdb
+*.cache
+*.zip
+*.vsconfig
+
+# Static web assets
+wwwroot/
+
+# Test results
+TestResults/
+
+# Coverage reports
+coverage/
+*.coverage
+*.coveragexml
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# DotCover
+*.dotCover
+
+# StyleCop
+StyleCopReport.xml
+
+# Windows image file caches
+Thumbs.db
+
+# macOS
+.DS_Store
+
+# npm packages
+node_modules/
+
+# Yarn
+.yarn/
+.yarnrc
+
+# Environment files
+.env
+.env.*
