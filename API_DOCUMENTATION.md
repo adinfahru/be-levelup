@@ -19,7 +19,7 @@ LevelUp is an employee development management system that enables employees to e
 ### Base URL
 
 ```
-https://api.levelup.local/api/v1
+https://https://localhost:7118/api/v1
 ```
 
 ### API Version
