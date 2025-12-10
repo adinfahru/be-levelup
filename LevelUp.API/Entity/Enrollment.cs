@@ -12,13 +12,13 @@ namespace LevelUp.API.Entity
         public DateTime TargetDate { get; set; }
         public DateTime? CompletedDate { get; set; }
         public EnrollmentStatus Status { get; set; }
-        public float CurrentProgress { get; set; }
+        public int CurrentProgress { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
         // Navigation properties
-        public Account Account { get; set; }
-        public Module Module { get; set; }
+        public Account? Account { get; set; }
+        public Module? Module { get; set; }
         public ICollection<EnrollmentItem> Items { get; set; } = new List<EnrollmentItem>();
         public ICollection<Submission> Submissions { get; set; } = new List<Submission>();
     }
