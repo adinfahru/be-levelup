@@ -75,3 +75,8 @@ node_modules/
 # Environment files
 .env
 .env.*
+
+# Local development settings (each developer has their own)
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
