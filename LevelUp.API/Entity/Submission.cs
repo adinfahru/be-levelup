@@ -11,13 +11,13 @@ namespace LevelUp.API.Entity
         public DateTime? UpdatedAt { get; set; }
 
         // Navigation properties
-        public Enrollment Enrollment { get; set; }
+        public Enrollment? Enrollment { get; set; }
     }
 
     public enum SubmissionStatus
     {
-        Pending = 0,
-        Approved = 1,
-        Rejected = 2,
+        Pending,
+        Approved,
+        Rejected,
     }
 }

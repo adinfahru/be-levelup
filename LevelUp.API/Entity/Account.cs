@@ -6,8 +6,8 @@ namespace LevelUp.API.Entity
     public class Account
     {
         public Guid Id { get; set; }
-        public string Email { get; set; }
-        public string PasswordHash { get; set; }
+        public string? Email { get; set; }
+        public string? PasswordHash { get; set; }
         public UserRole Role { get; set; }
         public int? Otp { get; set; }
         public bool IsActive { get; set; }
@@ -15,7 +15,7 @@ namespace LevelUp.API.Entity
         public DateTime? UpdatedAt { get; set; }
 
         // Navigation properties
-        public Employee Employee { get; set; }
+        public Employee? Employee { get; set; }
         public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
     }
 
