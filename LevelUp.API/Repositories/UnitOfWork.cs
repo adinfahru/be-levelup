@@ -1,41 +1,80 @@
+using System.Linq.Expressions;
 using LevelUp.API.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace LevelUp.API.Repositories;
 
-public interface IUnitOfWork
+public interface IRepository<T>
+    where T : class
 {
-    Task CommitTransactionAsync(Func<Task> action, CancellationToken cancellationToken);
+    Task<T?> GetByIdAsync(Guid id);
+    Task<IEnumerable<T>> GetAllAsync();
+    Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
+    Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
+    Task AddAsync(T entity);
+    void Update(T entity);
+    void Delete(T entity);
+    Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
+    Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
 }
 
-public class UnitOfWork : IUnitOfWork
+public class Repository<T> : IRepository<T>
+    where T : class
 {
-    private readonly LevelUpDbContext _context;
+    protected readonly LevelUpDbContext _context;
+    protected readonly DbSet<T> _dbSet;
 
-    public UnitOfWork(LevelUpDbContext context)
+    public Repository(LevelUpDbContext context)
     {
         _context = context;
+        _dbSet = context.Set<T>();
     }
 
-    public async Task CommitTransactionAsync(Func<Task> action, CancellationToken cancellationToken)
+    public virtual async Task<T?> GetByIdAsync(Guid id)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-
-        try
-        {
-            await action();
-            await _context.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-        }
-        catch 
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            throw; 
-        }
+        return await _dbSet.FindAsync(id);
     }
 
-    public Task ClearTracksAsync(CancellationToken cancellationToken)
+    public virtual async Task<IEnumerable<T>> GetAllAsync()
     {
-        _context.ChangeTracker.Clear();
-        return Task.CompletedTask;
+        return await _dbSet.ToListAsync();
+    }
+
+    public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.Where(predicate).ToListAsync();
+    }
+
+    public virtual async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.FirstOrDefaultAsync(predicate);
+    }
+
+    public virtual async Task AddAsync(T entity)
+    {
+        await _dbSet.AddAsync(entity);
+    }
+
+    public virtual void Update(T entity)
+    {
+        _dbSet.Update(entity);
+    }
+
+    public virtual void Delete(T entity)
+    {
+        _dbSet.Remove(entity);
+    }
+
+    public virtual async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.AnyAsync(predicate);
+    }
+
+    public virtual async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+    {
+        if (predicate == null)
+            return await _dbSet.CountAsync();
+
+        return await _dbSet.CountAsync(predicate);
     }
 }
