@@ -1,5 +1,6 @@
 using LevelUp.API.DTOs.AccountManagement;
 using LevelUp.API.Services.Interfaces;
+using LevelUp.API.Utilities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LevelUp.API.Controllers;
@@ -8,38 +9,39 @@ namespace LevelUp.API.Controllers;
 [Route("api/[controller]")]
 public class AccountController : ControllerBase
 {
-    private readonly IAccountService _accountService;
+    private readonly IUserService _userService;
 
-    public AccountController(IAccountService accountService)
+    public AccountController(IUserService userService)
     {
-        _accountService = accountService;
+        _userService = userService;
     }
 
     [HttpGet("admin/users")]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
-        var accounts = await _accountService.GetAllAccountsAsync(cancellationToken);
-        return Ok(accounts);
+        var data = await _userService.GetAllAccountsAsync(cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<UserResponse>>(200,"Success", data));
+        
     }
 
     [HttpPost("admin/users")]
-    public async Task<IActionResult> CreateAccount(AccountRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateAccount(UserRequest request, CancellationToken cancellationToken)
     {
-        await _accountService.CreateAccountAsync(request, cancellationToken);
-        return Ok("Succes Create");
+        await _userService.CreateAccountAsync(request, cancellationToken);
+        return Ok(new ApiResponse<UserResponse>("Account Success Create"));
     }
 
     [HttpPut("admin/users/{accountId}")]
-    public async Task<IActionResult> UpdateAccount(Guid accountId, AccountRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateAccount(Guid accountId, UserRequest request, CancellationToken cancellationToken)
     {
-        await _accountService.UpdateAccountAsync(accountId, request, cancellationToken);
-        return Ok("Succes Update");
+        await _userService.UpdateAccountAsync(accountId, request, cancellationToken);
+        return Ok(new ApiResponse<object>("Account Success Update"));
     }
 
     [HttpDelete("admin/users/{accountId}")]
     public async Task<IActionResult> DeleteAccount(Guid accountId, CancellationToken cancellationToken)
     {
-        await _accountService.DeleteAccountAsync(accountId, cancellationToken);
-        return Ok("Succes Delete");
+        await _userService.DeleteAccountAsync(accountId, cancellationToken);
+        return Ok(new ApiResponse<object>("Account Success Delete"));
     }
 }

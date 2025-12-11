@@ -1,6 +1,9 @@
 using LevelUp.API.Data;
 using LevelUp.API.Repositories.Implementations;
 using LevelUp.API.Repositories.Interfaces;
+using LevelUp.API.Services.Implementations;
+using LevelUp.API.Services.Interfaces;
+using LevelUp.API.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -29,6 +32,10 @@ builder.Services.AddScoped<IPositionRepository, PositionRepository>();
 builder.Services.AddScoped<ISubmissionRepository, SubmissionRepository>();
 
 // Add services
+builder.Services.AddScoped<IUserService, UserService>();
+
+//Global Exception
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Add services to the container.
 builder.Services.AddControllers();
