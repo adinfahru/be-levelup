@@ -1,4 +1,8 @@
 using LevelUp.API.Data;
+using LevelUp.API.Repositories.Implementations;
+using LevelUp.API.Repositories.Interfaces;
+using LevelUpAPI.Services;
+using LevelUpAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -18,6 +22,12 @@ builder.Services.AddCors(cfg =>
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+builder.Services.AddScoped<IPositionService, PositionService>();
+builder.Services.AddScoped<IPositionRepository, PositionRepository>();
+
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
