@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace SkillSyncAPI.Utilities;
+namespace LevelUp.API.Utilities;
 
 public class ApiResponse<TResponse>
 {

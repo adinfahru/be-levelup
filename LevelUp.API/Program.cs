@@ -1,4 +1,6 @@
 using LevelUp.API.Data;
+using LevelUp.API.Repositories.Implementations;
+using LevelUp.API.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -15,6 +17,18 @@ builder.Services.AddCors(cfg =>
         policy.AllowAnyMethod();
     })
 );
+
+// Add repositories
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+builder.Services.AddScoped<IModuleItemRepository, ModuleItemRepository>();
+builder.Services.AddScoped<IModuleRepository, ModuleRepository>();
+builder.Services.AddScoped<IPositionRepository, PositionRepository>();
+builder.Services.AddScoped<ISubmissionRepository, SubmissionRepository>();
+
+// Add services
 
 // Add services to the container.
 builder.Services.AddControllers();
