@@ -37,6 +37,9 @@ builder.Services.AddScoped<IUserService, UserService>();
 //Global Exception
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+//Global Exception
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 // Add services to the container.
 builder.Services.AddControllers();
 
