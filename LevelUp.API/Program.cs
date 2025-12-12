@@ -34,6 +34,7 @@ builder.Services.AddScoped<IJwtTokenHandler, JwtTokenHandler>();
 // Add services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPositionService, PositionService>();
 builder.Services.AddScoped<IModuleService, ModuleService>();
 
 //Global Exception
@@ -67,12 +68,6 @@ builder.Services.AddCors(cfg =>
         policy.AllowAnyMethod();
     })
 );
-
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-builder.Services.AddScoped<IPositionService, PositionService>();
-builder.Services.AddScoped<IPositionRepository, PositionRepository>();
-
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
