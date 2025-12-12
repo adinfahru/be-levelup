@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 namespace LevelUp.API.Repositories.Interfaces;
 
 public interface IRepository<Repo>
@@ -7,4 +9,5 @@ public interface IRepository<Repo>
     Task CreateAsync(Repo param, CancellationToken cancellationToken);
     Task UpdateAsync(Repo param);
     Task DeleteAsync(Repo param);
+    Task<Repo?> FirstOrDefaultAsync(Expression<Func<Repo, bool>> predicate);
 }

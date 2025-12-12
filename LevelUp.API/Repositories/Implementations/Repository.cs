@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using LevelUp.API.Data;
 using LevelUp.API.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -38,5 +39,10 @@ public class Repository<Repo> : IRepository<Repo> where Repo : class
     {
         _context.Set<Repo>().Update(param);
         return Task.CompletedTask;
+    }
+
+    public async Task<Repo?> FirstOrDefaultAsync(Expression<Func<Repo, bool>> predicate)
+    {
+        return await _context.Set<Repo>().FirstOrDefaultAsync(predicate);
     }
 }
