@@ -20,9 +20,12 @@ public class GlobalExceptionHandler : IExceptionHandler
 
     private static (int StatusCode, string Message) MapException(Exception exception)
     {
-        return exception switch {
+        return exception switch
+        {
             ArgumentException => (StatusCodes.Status400BadRequest, exception.Message),
+            InvalidOperationException => (StatusCodes.Status400BadRequest, exception.Message),
             NullReferenceException => (StatusCodes.Status404NotFound, exception.Message),
+            UnauthorizedAccessException => (StatusCodes.Status403Forbidden, exception.Message),
             _ => (StatusCodes.Status500InternalServerError,
                 $"Internal server error occured. Please contact the administrator. {exception.Message}")
         };
