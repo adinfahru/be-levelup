@@ -1,14 +1,35 @@
 using LevelUp.API.Data;
 using LevelUp.API.Repositories.Implementations;
 using LevelUp.API.Repositories.Interfaces;
+using LevelUp.API.Services.Implementations;
+using LevelUp.API.Services.Interfaces;
 using LevelUp.API.Utilities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<LevelUpDbContext>(options => options.UseSqlServer(connectionString));
+
+// JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
 
 builder.Services.AddCors(cfg =>
     cfg.AddDefaultPolicy(policy =>
@@ -22,14 +43,13 @@ builder.Services.AddCors(cfg =>
 // Add repositories
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
-builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
-builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
-builder.Services.AddScoped<IModuleItemRepository, ModuleItemRepository>();
-builder.Services.AddScoped<IModuleRepository, ModuleRepository>();
-builder.Services.AddScoped<IPositionRepository, PositionRepository>();
-builder.Services.AddScoped<ISubmissionRepository, SubmissionRepository>();
+
+// Add utilities
+builder.Services.AddScoped<IHashHandler, HashHandler>();
+builder.Services.AddScoped<IJwtTokenHandler, JwtTokenHandler>();
 
 // Add services
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 //Global Exception
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -96,6 +116,7 @@ app.UseHttpsRedirection();
 
 app.UseCors();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
