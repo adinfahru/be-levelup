@@ -1,6 +1,8 @@
 using LevelUp.API.Data;
 using LevelUp.API.Repositories.Implementations;
 using LevelUp.API.Repositories.Interfaces;
+using LevelUpAPI.Services;
+using LevelUpAPI.Services.Interfaces;
 using LevelUp.API.Services.Implementations;
 using LevelUp.API.Services.Interfaces;
 using LevelUp.API.Utilities;
@@ -56,6 +58,12 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+builder.Services.AddScoped<IPositionService, PositionService>();
+builder.Services.AddScoped<IPositionRepository, PositionRepository>();
+
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
