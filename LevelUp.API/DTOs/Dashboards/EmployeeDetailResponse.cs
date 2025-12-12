@@ -5,5 +5,7 @@ public record EmployeeDetailResponse(
     string FirstName,
     string LastName,
     string Status,
-    IEnumerable<string> Modules
+    string Email,
+    string Role,
+    string? PositionName
 );

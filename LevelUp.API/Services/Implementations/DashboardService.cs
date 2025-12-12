@@ -33,23 +33,24 @@ public class DashboardService : IDashboardService
     public async Task<EmployeeDetailResponse> GetEmployeeDetailAsync(Guid employeeId, Guid managerId)
     {
         var employee = await _employeeRepository.GetEmployeeByIdAsync(employeeId);
-        var modules = await _moduleRepository.GetModulesByEmployeeId(employeeId);
 
-        var status = employee.IsIdle ? "Idle" : "Active";
+        if (employee == null || employee.Account == null)
+            throw new Exception("Employee not found");
 
         return new EmployeeDetailResponse(
-            employee.Id,
-            employee.FirstName ?? string.Empty,
-            employee.LastName ?? string.Empty,
-            status,
-            modules.Select(m => m.Title ?? string.Empty)
+            Id: employee.Id,
+            FirstName: employee.FirstName ?? "",
+            LastName: employee.LastName ?? "",
+            Status: employee.IsIdle ? "Idle" : "Active",
+            Email: employee.Account.Email ?? "",
+            Role: employee.Account.Role.ToString(),
+            PositionName: employee.Position?.Title
         );
     }
 
     public async Task<IEnumerable<EmployeeListResponse>> GetEmployeesAsync(Guid managerId)
     {
         var allEmployees = await _employeeRepository.GetAllEmployees();
-        var enrolledIds = await _moduleRepository.CountEnrolledEmployeesByManager(managerId);
 
         var filtered = allEmployees
             .Where(e => e.Account != null && e.Account.Role == UserRole.Employee);
