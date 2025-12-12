@@ -1,6 +1,8 @@
 using LevelUp.API.Data;
 using LevelUp.API.Repositories.Implementations;
 using LevelUp.API.Repositories.Interfaces;
+using LevelUpAPI.Services;
+using LevelUpAPI.Services.Interfaces;
 using LevelUp.API.Services.Implementations;
 using LevelUp.API.Services.Interfaces;
 using LevelUp.API.Utilities;
@@ -65,6 +67,12 @@ builder.Services.AddCors(cfg =>
         policy.AllowAnyMethod();
     })
 );
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+builder.Services.AddScoped<IPositionService, PositionService>();
+builder.Services.AddScoped<IPositionRepository, PositionRepository>();
+
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
