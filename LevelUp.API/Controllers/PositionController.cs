@@ -1,7 +1,7 @@
 using LevelUp.API.DTOs.Positions;
 using LevelUpAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using SkillSyncAPI.Utilities;
+using LevelUp.API.Utilities;
 
 namespace LevelUp.API.Controllers;
 
