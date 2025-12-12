@@ -1,9 +1,3 @@
 namespace LevelUp.API.DTOs.Auth;
 
-public class LoginResponse
-{
-    public string Token { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string Role { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
-}
+public record LoginResponse(string Token, string Email, string Role, DateTime ExpiresAt);
