@@ -15,6 +15,32 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<LevelUpDbContext>(options => options.UseSqlServer(connectionString));
 
+// Add repositories
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+builder.Services.AddScoped<IModuleItemRepository, ModuleItemRepository>();
+builder.Services.AddScoped<IModuleRepository, ModuleRepository>();
+builder.Services.AddScoped<IPositionRepository, PositionRepository>();
+builder.Services.AddScoped<ISubmissionRepository, SubmissionRepository>();
+
+// Add utilities
+builder.Services.AddScoped<IHashHandler, HashHandler>();
+builder.Services.AddScoped<IJwtTokenHandler, JwtTokenHandler>();
+
+// Add services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IModuleService, ModuleService>();
+
+//Global Exception
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// Add services to the container.
+builder.Services.AddControllers();
+
+// JWT Authentication
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -39,23 +65,6 @@ builder.Services.AddCors(cfg =>
         policy.AllowAnyMethod();
     })
 );
-
-// Add repositories
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<IAccountRepository, AccountRepository>();
-
-// Add utilities
-builder.Services.AddScoped<IHashHandler, HashHandler>();
-builder.Services.AddScoped<IJwtTokenHandler, JwtTokenHandler>();
-
-// Add services
-builder.Services.AddScoped<IAuthService, AuthService>();
-
-//Global Exception
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-
-// Add services to the container.
-builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
