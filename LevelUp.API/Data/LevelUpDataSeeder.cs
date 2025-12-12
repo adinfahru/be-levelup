@@ -33,6 +33,12 @@ namespace LevelUp.API.Data
                     Title = "Quality Assurance",
                     IsActive = true,
                 },
+                new Position
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Data Minning",
+                    IsActive = true,
+                },
             };
             await context.Positions.AddRangeAsync(positions);
             await context.SaveChangesAsync();
@@ -68,7 +74,47 @@ namespace LevelUp.API.Data
                 CreatedAt = DateTime.UtcNow,
             };
 
-            await context.Accounts.AddRangeAsync(adminAccount, managerAccount, employeeAccount);
+            var employeeAccount2 = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = "employee2@levelup.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
+                Role = UserRole.Employee,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employeeAccount3 = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = "employee3@levelup.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
+                Role = UserRole.Employee,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employeeAccount4 = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = "employee4@levelup.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
+                Role = UserRole.Employee,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employeeAccount5 = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = "employee5@levelup.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
+                Role = UserRole.Employee,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            await context.Accounts.AddRangeAsync(adminAccount, managerAccount, employeeAccount, employeeAccount2, employeeAccount3, employeeAccount4, employeeAccount5);
             await context.SaveChangesAsync();
 
             // Seed Employees
@@ -105,7 +151,53 @@ namespace LevelUp.API.Data
                 CreatedAt = DateTime.UtcNow,
             };
 
-            await context.Employees.AddRangeAsync(adminEmployee, managerEmployee, employeeEmployee);
+            // EXTRA EMPLOYEES (4 orang)
+            var employee2 = new Employee
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employeeAccount2.Id,
+                FirstName = "Sarah",
+                LastName = "Wati",
+                PositionId = positions[0].Id,
+                IsIdle = false, // ACTIVE
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employee3 = new Employee
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employeeAccount3.Id,
+                FirstName = "Dimas",
+                LastName = "Santoso",
+                PositionId = positions[1].Id,
+                IsIdle = false, // ACTIVE
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employee4 = new Employee
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employeeAccount4.Id,
+                FirstName = "Rina",
+                LastName = "Amelia",
+                PositionId = positions[2].Id,
+                IsIdle = true, // IDLE
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employee5 = new Employee
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employeeAccount5.Id,
+                FirstName = "Andi",
+                LastName = "Saputra",
+                PositionId = positions[1].Id,
+                IsIdle = true, // IDLE
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            await context.Employees.AddRangeAsync(adminEmployee, managerEmployee, employeeEmployee,
+                employee2, employee3, employee4, employee5);
             await context.SaveChangesAsync();
 
             // Seed Module
