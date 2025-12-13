@@ -11,6 +11,14 @@ public class AccountRepository : Repository<Account>, IAccountRepository
     {
     }
 
+    public async Task<Account?> GetByEmailAsync(
+        string email,
+        CancellationToken cancellationToken)
+    {
+        return await _context.Accounts
+            .FirstOrDefaultAsync(a => a.Email == email, cancellationToken);
+    }
+
     public async Task<IEnumerable<Account>> GetAllWithEmployeesAsync(CancellationToken cancellationToken)
     {
         return await _context.Accounts
