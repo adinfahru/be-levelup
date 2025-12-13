@@ -10,4 +10,5 @@ public interface IRepository<Repo>
     Task UpdateAsync(Repo param);
     Task DeleteAsync(Repo param);
     Task<Repo?> FirstOrDefaultAsync(Expression<Func<Repo, bool>> predicate);
+    IQueryable<Repo> GetQueryable();
 }
