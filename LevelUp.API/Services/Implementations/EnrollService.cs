@@ -33,94 +33,188 @@ public class EnrollService : IEnrollService
         _employeeRepository = employeeRepository;
     }
 
-    public async Task<EnrollmentResponse> CompleteSectionAsync(Guid enrollmentId, Guid moduleItemId, string email, string? evidenceUrl, CancellationToken cancellationToken)
+    public async Task<EnrollmentResponse> GetEnrollmentProgressAsync(Guid enrollmentId, string email, CancellationToken cancellationToken)
     {
-        // 1. Resolve account dari email (AUTH → DOMAIN)
+        // 1. Resolve account dari email (JWT source of truth)
+        var account = await _accountRepository
+            .GetByEmailAsync(email, cancellationToken)
+            ?? throw new InvalidOperationException("Account not found");
+
+        // 2. Ambil enrollment MILIK user
+        var enrollment = await _enrollmentRepository
+            .GetByIdAndAccountIdAsync(enrollmentId, account.Id, cancellationToken)
+            ?? throw new InvalidOperationException("Enrollment not found");
+
+        // 3. Ambil module
+        var module = await _moduleRepository
+            .GetByIdAsync(enrollment.ModuleId, cancellationToken)
+            ?? throw new InvalidOperationException("Module not found");
+
+        // 4. Ambil checklist items (WAJIB INCLUDE ModuleItem)
+        var enrollmentItems = await _enrollmentItemRepository
+            .GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
+
+        if (!enrollmentItems.Any())
+            throw new InvalidOperationException("Enrollment has no checklist items");
+
+        // 5. Urutkan checklist
+        var orderedItems = enrollmentItems
+            .OrderBy(ei => ei.ModuleItem!.OrderIndex)
+            .ToList();
+
+        // 6. Mapping checklist
+        var sections = orderedItems.Select(ei => new EnrollmentItemDto(
+            EnrollmentItemId: ei.Id,
+            ModuleItemId: ei.ModuleItemId,
+            OrderIndex: ei.ModuleItem!.OrderIndex,
+            ModuleItemTitle: ei.ModuleItem.Title!,
+            ModuleItemDescription: ei.ModuleItem.Descriptions!,
+            ModuleItemUrl: ei.ModuleItem.Url!,
+            IsFinalSubmission: ei.ModuleItem.IsFinalSubmission,
+            IsCompleted: ei.IsCompleted,
+            EvidenceUrl: ei.EvidenceUrl,
+            CompletedAt: ei.CompletedAt
+        )).ToList();
+
+        // 7. Response
+        return new EnrollmentResponse(
+            EnrollmentId: enrollment.Id,
+            ModuleId: module.Id,
+            ModuleTitle: module.Title!,
+            ModuleDescription: module.Description!,
+            StartDate: enrollment.StartDate,
+            TargetDate: enrollment.TargetDate,
+            CompletedDate: enrollment.CompletedDate,
+            Status: enrollment.Status,
+            CurrentProgress: enrollment.CurrentProgress,
+            Sections: sections
+        );
+    }
+
+    public async Task<EnrollmentResponse> SubmitEnrollmentItemAsync(
+    Guid enrollmentId,
+    string email,
+    SubmitChecklistRequest request,
+    CancellationToken cancellationToken)
+    {
+        // 1. Resolve ACCOUNT dari EMAIL (JWT = source of truth)
         var account = await _accountRepository
             .FirstOrDefaultAsync(a => a.Email == email);
 
         if (account is null)
             throw new InvalidOperationException("Account not found");
 
-        // 2. Ambil employee
+        // 2. Ambil EMPLOYEE
         var employee = await _employeeRepository
             .GetByAccountIdAsync(account.Id, cancellationToken);
 
         if (employee is null)
             throw new InvalidOperationException("Employee not found");
 
-        // 3. Employee harus idle
         if (!employee.IsIdle)
-            throw new InvalidOperationException("Employee is not idle");
+            throw new InvalidOperationException(
+                "Checklist cannot be submitted while employee is not idle");
 
-        // 4. Ambil enrollment MILIK user 
-        var enrollment = await _enrollmentRepository.GetByIdAndAccountIdAsync(enrollmentId, account.Id, cancellationToken);
+        // 3. Ambil ENROLLMENT (harus milik user)
+        var enrollment = await _enrollmentRepository
+            .GetByIdAndAccountIdAsync(enrollmentId, account.Id, cancellationToken);
 
         if (enrollment is null)
             throw new InvalidOperationException("Enrollment not found");
 
-        // 5. Enrollment harus ongoing
         if (enrollment.Status != EnrollmentStatus.OnGoing)
             throw new InvalidOperationException("Enrollment is not ongoing");
 
-        // 6. Ambil enrollment items + ModuleItem (WAJIB INCLUDE)
-        var enrollmentItems = await _enrollmentItemRepository.GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
+        // 4. Validasi hari kerja (Senin–Jumat)
+        var today = DateTime.UtcNow.DayOfWeek;
+        if (today is DayOfWeek.Saturday or DayOfWeek.Sunday)
+            throw new InvalidOperationException(
+                "Checklist can only be submitted on working days (Monday–Friday)");
+
+        // 5. Ambil enrollment items + ModuleItem
+        var enrollmentItems = await _enrollmentItemRepository
+            .GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
 
         if (!enrollmentItems.Any())
-            throw new InvalidOperationException("Enrollment has no sections");
+            throw new InvalidOperationException("Enrollment has no checklist items");
 
         var orderedItems = enrollmentItems
             .OrderBy(ei => ei.ModuleItem!.OrderIndex)
             .ToList();
 
-        // 7. Ambil next section yang BELUM selesai
-        var nextSection = orderedItems.FirstOrDefault(ei => !ei.IsCompleted);
+        // 6. RULE: 1 CHECKLIST PER HARI (KECUALI FINAL SUBMISSION)
+        var todayDate = DateTime.UtcNow.Date;
 
-        if (nextSection is null)
-            throw new InvalidOperationException("All sections already completed");
+        var alreadySubmittedToday = orderedItems.Any(i =>
+            i.IsCompleted &&
+            i.CompletedAt.HasValue &&
+            i.CompletedAt.Value.Date == todayDate);
 
-        // 8. Anti lompat step
-        if (nextSection.ModuleItemId != moduleItemId)
-            throw new InvalidOperationException("Section order violation");
+        // ambil next checklist lebih awal
+        var nextItem = orderedItems.FirstOrDefault(i => !i.IsCompleted);
 
-        // 9. Final submission wajib evidence
-        if (nextSection.ModuleItem!.IsFinalSubmission &&
-            string.IsNullOrWhiteSpace(evidenceUrl))
-            throw new InvalidOperationException("Final submission requires evidence");
+        if (nextItem is null)
+            throw new InvalidOperationException("All checklist items already completed");
 
-        // 10. Tandai section completed
-        nextSection.IsCompleted = true;
-        nextSection.EvidenceUrl = evidenceUrl;
-        nextSection.CompletedAt = DateTime.UtcNow;
+        if (alreadySubmittedToday && !nextItem.ModuleItem!.IsFinalSubmission)
+            throw new InvalidOperationException(
+                "Only one checklist can be completed per working day");
 
-        // 11. Update progress
+        // 7. Anti skip (harus urut)
+        if (nextItem.ModuleItemId != request.ModuleItemId)
+            throw new InvalidOperationException(
+                "Checklist must be completed in order");
+
+        // 8. Final submission wajib evidence
+        if (nextItem.ModuleItem!.IsFinalSubmission &&
+            string.IsNullOrWhiteSpace(request.EvidenceUrl))
+        {
+            throw new InvalidOperationException(
+                "Final assignment requires evidence URL");
+        }
+
+        // 9. Submit checklist
+        nextItem.IsCompleted = true;
+        nextItem.EvidenceUrl = request.EvidenceUrl;
+        nextItem.Feedback = request.Feedback;
+        nextItem.CompletedAt = DateTime.UtcNow;
+
+        // 10. Update progress
         var completedCount = orderedItems.Count(i => i.IsCompleted);
         var totalCount = orderedItems.Count;
 
         enrollment.CurrentProgress =
             (int)Math.Round((double)completedCount / totalCount * 100);
 
-        // 12. Jika semua selesai → complete enrollment
+        // 11. PENENTUAN STATUS ENROLLMENT
         if (completedCount == totalCount)
         {
-            enrollment.Status = EnrollmentStatus.Completed;
-            enrollment.CompletedDate = DateTime.UtcNow;
+            if (nextItem.ModuleItem.IsFinalSubmission)
+            {
+                // FINAL PROJECT MASUK TAHAP REVIEW
+                enrollment.Status = EnrollmentStatus.OnGoing;
+            }
+            else
+            {
+                enrollment.Status = EnrollmentStatus.Completed;
+                enrollment.CompletedDate = DateTime.UtcNow;
+            }
         }
 
         enrollment.UpdatedAt = DateTime.UtcNow;
 
-        // 13. Transaction
+        // 12. TRANSACTION
         await _unitOfWork.CommitTransactionAsync(async () =>
         {
-            await _enrollmentItemRepository.UpdateAsync(nextSection);
+            await _enrollmentItemRepository.UpdateAsync(nextItem);
             await _enrollmentRepository.UpdateAsync(enrollment);
         }, cancellationToken);
 
-        // 14. Mapping response
+        // 13. Mapping response
         var module = await _moduleRepository
             .GetByIdAsync(enrollment.ModuleId, cancellationToken);
 
-        var sectionDtos = orderedItems.Select(ei => new EnrollmentItemDto(
+        var sections = orderedItems.Select(ei => new EnrollmentItemDto(
             EnrollmentItemId: ei.Id,
             ModuleItemId: ei.ModuleItemId,
             OrderIndex: ei.ModuleItem!.OrderIndex,
@@ -143,7 +237,7 @@ public class EnrollService : IEnrollService
             CompletedDate: enrollment.CompletedDate,
             Status: enrollment.Status,
             CurrentProgress: enrollment.CurrentProgress,
-            Sections: sectionDtos
+            Sections: sections
         );
     }
 

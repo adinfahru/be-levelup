@@ -9,6 +9,7 @@ public interface IEnrollService
     Task<EnrollmentResponse> ResumeEnrollmentAsync(Guid enrollmentId, string email, CancellationToken cancellationToken);
     Task<EnrollmentResponse?> GetCurrentEnrollmentAsync(string email, CancellationToken cancellationToken);
     Task<List<EnrollmentResponse>> GetEnrollmentHistoryAsync(string email, CancellationToken cancellationToken);
-    Task<EnrollmentResponse> CompleteSectionAsync(Guid enrollmentId, Guid moduleItemId, string email, string? evidenceUrl, CancellationToken cancellationToken);
+    Task<EnrollmentResponse> SubmitEnrollmentItemAsync(Guid enrollmentId, string email, SubmitChecklistRequest request, CancellationToken cancellationToken);
+    Task<EnrollmentResponse> GetEnrollmentProgressAsync(Guid enrollmentId, string email, CancellationToken cancellationToken);
 
 }

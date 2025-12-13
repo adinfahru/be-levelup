@@ -18,9 +18,6 @@ public class EnrollController : ControllerBase
         _enrollService = enrollService;
     }
 
-    // =========================
-    // GET CURRENT ENROLLMENT
-    // =========================
     [HttpGet("current")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> GetCurrentEnrollment(
@@ -38,9 +35,6 @@ public class EnrollController : ControllerBase
         return Ok(new ApiResponse<EnrollmentResponse>(enrollment));
     }
 
-    // =========================
-    // ENROLL MODULE
-    // =========================
     [HttpPost]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> Enroll(
@@ -59,29 +53,59 @@ public class EnrollController : ControllerBase
             new ApiResponse<EnrollmentResponse>(response));
     }
 
-    // =========================
-    // RESUME ENROLLMENT
-    // =========================
-    [HttpPost("{id:guid}/resume")]
+    [HttpPost("{enrollmentid:guid}/items")]
+    [Authorize(Roles = "Employee")]
+    public async Task<IActionResult> SubmitChecklist(
+        Guid enrollmentid,
+        [FromBody] SubmitChecklistRequest request,
+        CancellationToken cancellationToken)
+    {
+        var email = User.GetEmail();
+
+        var response =
+            await _enrollService.SubmitEnrollmentItemAsync(
+                enrollmentid,
+                email,
+                request,
+                cancellationToken);
+
+        return Ok(new ApiResponse<EnrollmentResponse>(response));
+    }
+
+    [HttpGet("{enrollmentid:guid}/progress")]
+    [Authorize(Roles = "Employee")]
+    public async Task<IActionResult> GetProgress(
+        Guid enrollmentid,
+        CancellationToken cancellationToken)
+    {
+        var email = User.GetEmail();
+
+        var progress =
+            await _enrollService.GetEnrollmentProgressAsync(
+                enrollmentid,
+                email,
+                cancellationToken);
+
+        return Ok(new ApiResponse<EnrollmentResponse>(progress));
+    }
+
+    [HttpPost("{enrollmentid:guid}/resume")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> Resume(
-        Guid id,
+        Guid enrollmentid,
         CancellationToken cancellationToken)
     {
         var email = User.GetEmail();
 
         var response =
             await _enrollService.ResumeEnrollmentAsync(
-                id,
+                enrollmentid,
                 email,
                 cancellationToken);
 
         return Ok(new ApiResponse<EnrollmentResponse>(response));
     }
 
-    // =========================
-    // ENROLLMENT HISTORY
-    // =========================
     [HttpGet("history")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> GetHistory(
