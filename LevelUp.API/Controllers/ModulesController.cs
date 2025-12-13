@@ -8,8 +8,8 @@ using System.Security.Claims;
 namespace LevelUp.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-[Authorize]
+[Route("api/v1/modules")]
+[Authorize(Roles = "Manager,Employee")]
 public class ModulesController : ControllerBase
 {
     private readonly IModuleService _moduleService;
@@ -58,8 +58,8 @@ public class ModulesController : ControllerBase
     [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Create([FromBody] CreateModuleRequest request)
     {
-        var managerId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty);
-        var module = await _moduleService.CreateAsync(request, managerId);
+        var accountId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty);
+        var module = await _moduleService.CreateAsync(request, accountId);
 
         return CreatedAtAction(
             nameof(GetById),

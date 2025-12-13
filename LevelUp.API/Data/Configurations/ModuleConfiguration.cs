@@ -28,7 +28,7 @@ namespace LevelUp.API.Data.Configurations
             // Relationships
             builder
                 .HasOne(m => m.Creator)
-                .WithMany(e => e.CreatedModules)
+                .WithMany(a => a.CreatedModules)
                 .HasForeignKey(m => m.CreatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
 
