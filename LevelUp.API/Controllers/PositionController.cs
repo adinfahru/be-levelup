@@ -1,12 +1,14 @@
 using LevelUp.API.DTOs.Positions;
 using LevelUpAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using LevelUp.API.Utilities;
 
 namespace LevelUp.API.Controllers;
 
 [ApiController]
-[Route("admin/positions")]
+[Route("api/v1/positions")]
+[Authorize(Roles = "Admin")]
 public class PositionController : ControllerBase
 {
     private readonly IPositionService _positionService;
