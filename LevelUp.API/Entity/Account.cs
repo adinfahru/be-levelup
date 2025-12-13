@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace LevelUp.API.Entity
 {
@@ -17,8 +18,10 @@ namespace LevelUp.API.Entity
         // Navigation properties
         public Employee? Employee { get; set; }
         public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+        public ICollection<Module> CreatedModules { get; set; } = new List<Module>();
     }
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum UserRole
     {
         Admin,

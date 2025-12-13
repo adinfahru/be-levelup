@@ -16,7 +16,7 @@ namespace LevelUp.API.Entity
         public DateTime? DeletedAt { get; set; }
 
         // Navigation properties
-        public Employee? Creator { get; set; }
+        public Account? Creator { get; set; }
         public ICollection<ModuleItem> Items { get; set; } = new List<ModuleItem>();
         public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
     }
