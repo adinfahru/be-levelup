@@ -7,7 +7,7 @@ namespace LevelUp.API.Utilities;
 
 public interface IJwtTokenHandler
 {
-  string GenerateToken(string email, string role);
+  string GenerateToken(string accountId, string email, string role);
 }
 
 public class JwtTokenHandler : IJwtTokenHandler
@@ -19,10 +19,11 @@ public class JwtTokenHandler : IJwtTokenHandler
     _configuration = configuration;
   }
 
-  public string GenerateToken(string email, string role)
+  public string GenerateToken(string accountId, string email, string role)
   {
     var claims = new[]
     {
+            new Claim(ClaimTypes.NameIdentifier, accountId),
             new Claim(ClaimTypes.Email, email),
             new Claim(ClaimTypes.Role, role),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
