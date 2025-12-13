@@ -13,7 +13,7 @@ namespace LevelUpAPI.Services
 
         public PositionService(IPositionRepository positionRepository, IUnitOfWork unitOfWork)
         {
-            _positionRepository = positionRepository;  
+            _positionRepository = positionRepository;
             _unitOfWork = unitOfWork;
         }
 
@@ -38,9 +38,10 @@ namespace LevelUpAPI.Services
             if (position is null)
                 throw new NullReferenceException("Position Id not found");
 
+            position.IsActive = false;
             await _unitOfWork.CommitTransactionAsync(async () =>
             {
-                await _positionRepository.DeleteAsync(position);
+                await _positionRepository.UpdateAsync(position);
             }, cancellationToken);
         }
 
@@ -49,6 +50,7 @@ namespace LevelUpAPI.Services
             // var positions = await _positionRepository.GetAllAsync(cancellationToken);
             var positions = (await _positionRepository.GetAllAsync(cancellationToken))
                 .Cast<Position>()
+                .Where(p => p.IsActive)
                 .ToList();
 
 
