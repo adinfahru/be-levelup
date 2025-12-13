@@ -22,7 +22,7 @@ public class ModuleService : IModuleService
     _unitOfWork = unitOfWork;
   }
 
-  public async Task<(List<ModuleResponse> items, int total)> GetAllAsync(
+  public Task<(List<ModuleResponse> items, int total)> GetAllAsync(
       int page,
       int limit,
       bool? isActive,
@@ -54,7 +54,7 @@ public class ModuleService : IModuleService
         ))
         .ToList();
 
-    return (items, total);
+    return Task.FromResult((items, total));
   }
 
   public async Task<ModuleDetailResponse?> GetByIdAsync(Guid id)
