@@ -2,6 +2,7 @@ using LevelUp.API.DTOs.AccountManagement;
 using LevelUp.API.Entity;
 using LevelUp.API.Repositories.Interfaces;
 using LevelUp.API.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace LevelUp.API.Services.Implementations;
 
@@ -9,17 +10,27 @@ public class UserService : IUserService
 {
     private readonly IAccountRepository _accountRepository;
     private readonly IEmployeeRepository _employeeRepository;
+    private readonly IPositionRepository _positionRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UserService(IAccountRepository accountRepository, IEmployeeRepository employeeRepository, IUnitOfWork unitOfWork)
+    public UserService(IAccountRepository accountRepository, IEmployeeRepository employeeRepository, IPositionRepository positionRepository, IUnitOfWork unitOfWork)
     {
         _accountRepository = accountRepository;
         _employeeRepository = employeeRepository;
+        _positionRepository = positionRepository;
         _unitOfWork = unitOfWork;
     }
-    
+
     public async Task CreateAccountAsync(UserRequest request, CancellationToken cancellationToken)
     {
+        // Validate position if provided
+        if (request.PositionId.HasValue)
+        {
+            var position = await _positionRepository.GetByIdAsync(request.PositionId.Value, cancellationToken);
+            if (position == null)
+                throw new InvalidOperationException($"Position with ID '{request.PositionId}' not found");
+        }
+
         var accountId = Guid.NewGuid();
 
         var account = new Account
@@ -56,6 +67,14 @@ public class UserService : IUserService
 
     public async Task UpdateAccountAsync(Guid accountId, UserRequest request, CancellationToken cancellationToken)
     {
+        // Validate position if provided
+        if (request.PositionId.HasValue)
+        {
+            var position = await _positionRepository.GetByIdAsync(request.PositionId.Value, cancellationToken);
+            if (position == null)
+                throw new InvalidOperationException($"Position with ID '{request.PositionId}' not found");
+        }
+
         // Ambil account
         var account = await _accountRepository.GetByIdAsync(accountId, cancellationToken);
 
@@ -72,6 +91,8 @@ public class UserService : IUserService
         account.Email = request.Email;
         account.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
         account.Role = request.Role;
+        if (request.IsActive.HasValue)
+            account.IsActive = request.IsActive.Value;
         account.UpdatedAt = DateTime.UtcNow;
 
         // Update Employee
@@ -102,6 +123,7 @@ public class UserService : IUserService
             await _accountRepository.UpdateAsync(account);
         }, cancellationToken);
     }
+
     public async Task<UserResponse> GetAccountByIdAsync(Guid accountId, CancellationToken cancellationToken)
     {
         var account = await _accountRepository.GetByIdAsync(accountId, cancellationToken);
@@ -128,14 +150,32 @@ public class UserService : IUserService
         );
     }
 
-    public async Task<IEnumerable<UserResponse>> GetAllAccountsAsync(CancellationToken cancellationToken)
+    public Task<(IEnumerable<UserResponse> items, int total)> GetAllAccountsAsync(
+        int page,
+        int limit,
+        string? role,
+        bool? isActive,
+        CancellationToken cancellationToken)
     {
-        var accounts = await _accountRepository.GetAllWithEmployeesAsync(cancellationToken);
+        IQueryable<Account> query = _accountRepository.GetQueryable()
+            .Include(a => a.Employee);
 
-        if (!accounts.Any())
-            throw new NullReferenceException("No accounts found");
+        // Filter by isActive
+        if (isActive.HasValue)
+            query = query.Where(a => a.IsActive == isActive.Value);
 
-        var accountList = accounts.Select(account => 
+        // Filter by role
+        if (!string.IsNullOrWhiteSpace(role))
+            query = query.Where(a => a.Role.ToString() == role);
+
+        var total = query.Count();
+        var accounts = query
+            .OrderByDescending(a => a.CreatedAt)
+            .Skip((page - 1) * limit)
+            .Take(limit)
+            .ToList();
+
+        var accountList = accounts.Select(account =>
             new UserResponse(
                 account.Id,
                 account.Email!,
@@ -149,6 +189,6 @@ public class UserService : IUserService
             )
         );
 
-        return accountList;
+        return Task.FromResult((accountList.AsEnumerable(), total));
     }
 }

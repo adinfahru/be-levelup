@@ -19,15 +19,28 @@ public class UserController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 10,
+        [FromQuery] string? role = null,
+        [FromQuery] bool? isActive = null,
+        CancellationToken cancellationToken = default)
     {
-        var data = await _userService.GetAllAccountsAsync(cancellationToken);
-        return Ok(new ApiResponse<IEnumerable<UserResponse>>(200, "Success", data));
+        var (data, total) = await _userService.GetAllAccountsAsync(page, limit, role, isActive, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<UserResponse>>(200, "Success", data, total));
+    }
 
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var data = await _userService.GetAccountByIdAsync(id, cancellationToken);
+        return Ok(new ApiResponse<UserResponse>(200, "Success", data));
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateAccount([FromBody] UserRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateAccount(
+        [FromBody] UserRequest request,
+        CancellationToken cancellationToken = default)
     {
         await _userService.CreateAccountAsync(request, cancellationToken);
         return Ok(new ApiResponse<UserResponse>("Account Success Create"));
