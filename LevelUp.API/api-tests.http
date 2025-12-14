@@ -88,7 +88,7 @@ Authorization: Bearer {{adminToken}}
   "email": "john.doe@example.com",
   "password": "John123456",
   "role": "Admin",
-  "positionId": "14eac010-ecae-46a8-acdc-2a47ece8001e"
+  "positionId": "c88ace1d-42a4-4e51-9a4a-ba1b5db2759d"
 }
 
 ### 2.4 Update User (Admin) - Replace {userId} with actual ID
