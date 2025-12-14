@@ -88,7 +88,7 @@ Authorization: Bearer {{adminToken}}
   "email": "john.doe@example.com",
   "password": "John123456",
   "role": "Admin",
-  "positionId": "c88ace1d-42a4-4e51-9a4a-ba1b5db2759d"
+  "positionId": "14eac010-ecae-46a8-acdc-2a47ece8001e"
 }
 
 ### 2.4 Update User (Admin) - Replace {userId} with actual ID
@@ -144,21 +144,20 @@ Content-Type: application/json
 Authorization: Bearer {{adminToken}}
 
 {
-  "title": "Chiuy"
+  "title": "Software Engineer"
 }
 
 ### 3.4 Update Position (Admin) - Replace {positionId}
-PUT {{baseUrl}}/positions/e72aa510-1a7e-40ff-b2a8-e22d981cfed7
+PUT {{baseUrl}}/positions/378ba241-aade-4360-8975-fda473343c7b
 Content-Type: application/json
 Authorization: Bearer {{adminToken}}
 
 {
-  "title": "Data Scientist",
-  "isActive": false
+  "title": "Lead Software Engineer"
 }
 
 ### 3.5 Delete Position (Admin) - Replace {positionId}
-DELETE {{baseUrl}}/positions/d97e5af9-d943-4040-8c25-fdff6e82a804
+DELETE {{baseUrl}}/positions/378ba241-aade-4360-8975-fda473343c7b
 Authorization: Bearer {{adminToken}}
 
 ### 3.6 Get Positions without Token (Should Fail - 401)
