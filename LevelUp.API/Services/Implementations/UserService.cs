@@ -91,6 +91,8 @@ public class UserService : IUserService
         account.Email = request.Email;
         account.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
         account.Role = request.Role;
+        if (request.IsActive.HasValue)
+            account.IsActive = request.IsActive.Value;
         account.UpdatedAt = DateTime.UtcNow;
 
         // Update Employee
@@ -121,6 +123,7 @@ public class UserService : IUserService
             await _accountRepository.UpdateAsync(account);
         }, cancellationToken);
     }
+
     public async Task<UserResponse> GetAccountByIdAsync(Guid accountId, CancellationToken cancellationToken)
     {
         var account = await _accountRepository.GetByIdAsync(accountId, cancellationToken);

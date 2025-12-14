@@ -9,5 +9,6 @@ public record UserRequest
     string Email,
     string Password,
     UserRole Role,
-    Guid? PositionId
+    Guid? PositionId,
+    bool? IsActive
 );
