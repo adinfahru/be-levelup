@@ -144,20 +144,21 @@ Content-Type: application/json
 Authorization: Bearer {{adminToken}}
 
 {
-  "title": "Software Engineer"
+  "title": "Chiuy"
 }
 
 ### 3.4 Update Position (Admin) - Replace {positionId}
-PUT {{baseUrl}}/positions/378ba241-aade-4360-8975-fda473343c7b
+PUT {{baseUrl}}/positions/e72aa510-1a7e-40ff-b2a8-e22d981cfed7
 Content-Type: application/json
 Authorization: Bearer {{adminToken}}
 
 {
-  "title": "Lead Software Engineer"
+  "title": "Data Scientist",
+  "isActive": false
 }
 
 ### 3.5 Delete Position (Admin) - Replace {positionId}
-DELETE {{baseUrl}}/positions/378ba241-aade-4360-8975-fda473343c7b
+DELETE {{baseUrl}}/positions/d97e5af9-d943-4040-8c25-fdff6e82a804
 Authorization: Bearer {{adminToken}}
 
 ### 3.6 Get Positions without Token (Should Fail - 401)
