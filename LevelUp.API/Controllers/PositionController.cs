@@ -19,10 +19,10 @@ public class PositionController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll([FromQuery] bool? isActive, CancellationToken cancellationToken)
     {
-        var positions = await _positionService.GetAllPositionsAsync(cancellationToken);
-        return Ok(new ApiResponse<IEnumerable<PositionResponse>>(positions));
+        var (positions, total) = await _positionService.GetAllPositionsAsync(isActive, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<PositionResponse>>(200, "Success", positions, total));
     }
 
     [HttpGet("{id}")]
