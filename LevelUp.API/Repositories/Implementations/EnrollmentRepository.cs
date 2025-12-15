@@ -39,4 +39,15 @@ public class EnrollmentRepository : Repository<Enrollment>, IEnrollmentRepositor
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<bool> HasCompletedModuleAsync(
+    Guid accountId,
+    Guid moduleId,
+    CancellationToken cancellationToken)
+    {
+        return await _context.Enrollments.AnyAsync(e =>
+            e.AccountId == accountId &&
+            e.ModuleId == moduleId &&
+            e.Status == EnrollmentStatus.Completed,
+            cancellationToken);
+    }
 }

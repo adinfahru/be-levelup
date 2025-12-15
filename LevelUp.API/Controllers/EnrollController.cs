@@ -18,16 +18,20 @@ public class EnrollController : ControllerBase
         _enrollService = enrollService;
     }
 
+    // =========================
+    // GET CURRENT ENROLLMENT
+    // =========================
     [HttpGet("current")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> GetCurrentEnrollment(
         CancellationToken cancellationToken)
     {
-        var email = User.GetEmail();
+        var accountId = User.GetAccountId(); // ✅ JWT source of truth
 
         var enrollment =
             await _enrollService.GetCurrentEnrollmentAsync(
-                email, cancellationToken);
+                accountId,
+                cancellationToken);
 
         if (enrollment is null)
             return NoContent(); // 204
@@ -35,16 +39,19 @@ public class EnrollController : ControllerBase
         return Ok(new ApiResponse<EnrollmentResponse>(enrollment));
     }
 
+    // =========================
+    // ENROLL MODULE
+    // =========================
     [HttpPost]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> Enroll(
         [FromBody] EnrollmentRequest request,
         CancellationToken cancellationToken)
     {
-        var email = User.GetEmail();
+        var accountId = User.GetAccountId();
 
         var response = await _enrollService.EnrollAsync(
-            email,
+            accountId,
             request.ModuleId,
             cancellationToken);
 
@@ -53,6 +60,9 @@ public class EnrollController : ControllerBase
             new ApiResponse<EnrollmentResponse>(response));
     }
 
+    // =========================
+    // SUBMIT CHECKLIST ITEM
+    // =========================
     [HttpPost("{enrollmentid:guid}/items")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> SubmitChecklist(
@@ -60,62 +70,71 @@ public class EnrollController : ControllerBase
         [FromBody] SubmitChecklistRequest request,
         CancellationToken cancellationToken)
     {
-        var email = User.GetEmail();
+        var accountId = User.GetAccountId();
 
         var response =
             await _enrollService.SubmitEnrollmentItemAsync(
                 enrollmentid,
-                email,
+                accountId,
                 request,
                 cancellationToken);
 
         return Ok(new ApiResponse<EnrollmentResponse>(response));
     }
 
+    // =========================
+    // GET PROGRESS
+    // =========================
     [HttpGet("{enrollmentid:guid}/progress")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> GetProgress(
         Guid enrollmentid,
         CancellationToken cancellationToken)
     {
-        var email = User.GetEmail();
+        var accountId = User.GetAccountId();
 
         var progress =
             await _enrollService.GetEnrollmentProgressAsync(
                 enrollmentid,
-                email,
+                accountId,
                 cancellationToken);
 
         return Ok(new ApiResponse<EnrollmentResponse>(progress));
     }
 
+    // =========================
+    // RESUME ENROLLMENT
+    // =========================
     [HttpPost("{enrollmentid:guid}/resume")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> Resume(
         Guid enrollmentid,
         CancellationToken cancellationToken)
     {
-        var email = User.GetEmail();
+        var accountId = User.GetAccountId();
 
         var response =
             await _enrollService.ResumeEnrollmentAsync(
                 enrollmentid,
-                email,
+                accountId,
                 cancellationToken);
 
         return Ok(new ApiResponse<EnrollmentResponse>(response));
     }
 
+    // =========================
+    // GET HISTORY
+    // =========================
     [HttpGet("history")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> GetHistory(
         CancellationToken cancellationToken)
     {
-        var email = User.GetEmail();
+        var accountId = User.GetAccountId();
 
         var history =
             await _enrollService.GetEnrollmentHistoryAsync(
-                email,
+                accountId,
                 cancellationToken);
 
         return Ok(new ApiResponse<List<EnrollmentResponse>>(history));

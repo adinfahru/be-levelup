@@ -33,36 +33,34 @@ public class EnrollService : IEnrollService
         _employeeRepository = employeeRepository;
     }
 
-    public async Task<EnrollmentResponse> GetEnrollmentProgressAsync(Guid enrollmentId, string email, CancellationToken cancellationToken)
+    public async Task<EnrollmentResponse> GetEnrollmentProgressAsync(
+    Guid enrollmentId,
+    Guid accountId,
+    CancellationToken cancellationToken)
     {
-        // 1. Resolve account dari email (JWT source of truth)
-        var account = await _accountRepository
-            .GetByEmailAsync(email, cancellationToken)
-            ?? throw new InvalidOperationException("Account not found");
-
-        // 2. Ambil enrollment MILIK user
+        // 1. Ambil enrollment (HARUS milik account)
         var enrollment = await _enrollmentRepository
-            .GetByIdAndAccountIdAsync(enrollmentId, account.Id, cancellationToken)
+            .GetByIdAndAccountIdAsync(enrollmentId, accountId, cancellationToken)
             ?? throw new InvalidOperationException("Enrollment not found");
 
-        // 3. Ambil module
+        // 2. Ambil module
         var module = await _moduleRepository
             .GetByIdAsync(enrollment.ModuleId, cancellationToken)
             ?? throw new InvalidOperationException("Module not found");
 
-        // 4. Ambil checklist items (WAJIB INCLUDE ModuleItem)
+        // 3. Ambil checklist items (WAJIB include ModuleItem)
         var enrollmentItems = await _enrollmentItemRepository
             .GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
 
         if (!enrollmentItems.Any())
             throw new InvalidOperationException("Enrollment has no checklist items");
 
-        // 5. Urutkan checklist
+        // 4. Urutkan checklist
         var orderedItems = enrollmentItems
             .OrderBy(ei => ei.ModuleItem!.OrderIndex)
             .ToList();
 
-        // 6. Mapping checklist
+        // 5. Mapping checklist
         var sections = orderedItems.Select(ei => new EnrollmentItemDto(
             EnrollmentItemId: ei.Id,
             ModuleItemId: ei.ModuleItemId,
@@ -76,7 +74,7 @@ public class EnrollService : IEnrollService
             CompletedAt: ei.CompletedAt
         )).ToList();
 
-        // 7. Response
+        // 6. Response
         return new EnrollmentResponse(
             EnrollmentId: enrollment.Id,
             ModuleId: module.Id,
@@ -91,47 +89,37 @@ public class EnrollService : IEnrollService
         );
     }
 
+
     public async Task<EnrollmentResponse> SubmitEnrollmentItemAsync(
     Guid enrollmentId,
-    string email,
+    Guid accountId,
     SubmitChecklistRequest request,
     CancellationToken cancellationToken)
     {
-        // 1. Resolve ACCOUNT dari EMAIL (JWT = source of truth)
-        var account = await _accountRepository
-            .FirstOrDefaultAsync(a => a.Email == email);
-
-        if (account is null)
-            throw new InvalidOperationException("Account not found");
-
-        // 2. Ambil EMPLOYEE
+        // 1. Ambil employee
         var employee = await _employeeRepository
-            .GetByAccountIdAsync(account.Id, cancellationToken);
-
-        if (employee is null)
-            throw new InvalidOperationException("Employee not found");
+            .GetByAccountIdAsync(accountId, cancellationToken)
+            ?? throw new InvalidOperationException("Employee not found");
 
         if (!employee.IsIdle)
             throw new InvalidOperationException(
                 "Checklist cannot be submitted while employee is not idle");
 
-        // 3. Ambil ENROLLMENT (harus milik user)
+        // 2. Ambil enrollment (HARUS milik employee)
         var enrollment = await _enrollmentRepository
-            .GetByIdAndAccountIdAsync(enrollmentId, account.Id, cancellationToken);
-
-        if (enrollment is null)
-            throw new InvalidOperationException("Enrollment not found");
+            .GetByIdAndAccountIdAsync(enrollmentId, accountId, cancellationToken)
+            ?? throw new InvalidOperationException("Enrollment not found");
 
         if (enrollment.Status != EnrollmentStatus.OnGoing)
             throw new InvalidOperationException("Enrollment is not ongoing");
 
-        // 4. Validasi hari kerja (Senin–Jumat)
+        // 3. Validasi hari kerja (Senin–Jumat)
         var today = DateTime.UtcNow.DayOfWeek;
         if (today is DayOfWeek.Saturday or DayOfWeek.Sunday)
             throw new InvalidOperationException(
                 "Checklist can only be submitted on working days (Monday–Friday)");
 
-        // 5. Ambil enrollment items + ModuleItem
+        // 4. Ambil enrollment items + ModuleItem
         var enrollmentItems = await _enrollmentItemRepository
             .GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
 
@@ -142,7 +130,7 @@ public class EnrollService : IEnrollService
             .OrderBy(ei => ei.ModuleItem!.OrderIndex)
             .ToList();
 
-        // 6. RULE: 1 CHECKLIST PER HARI (KECUALI FINAL SUBMISSION)
+        // 5. RULE: 1 checklist per hari (kecuali final submission)
         var todayDate = DateTime.UtcNow.Date;
 
         var alreadySubmittedToday = orderedItems.Any(i =>
@@ -150,69 +138,66 @@ public class EnrollService : IEnrollService
             i.CompletedAt.HasValue &&
             i.CompletedAt.Value.Date == todayDate);
 
-        // ambil next checklist lebih awal
-        var nextItem = orderedItems.FirstOrDefault(i => !i.IsCompleted);
-
-        if (nextItem is null)
-            throw new InvalidOperationException("All checklist items already completed");
+        var nextItem = orderedItems.FirstOrDefault(i => !i.IsCompleted)
+            ?? throw new InvalidOperationException("All checklist items already completed");
 
         if (alreadySubmittedToday && !nextItem.ModuleItem!.IsFinalSubmission)
             throw new InvalidOperationException(
                 "Only one checklist can be completed per working day");
 
-        // 7. Anti skip (harus urut)
+        // 6. Anti skip (harus urut)
         if (nextItem.ModuleItemId != request.ModuleItemId)
             throw new InvalidOperationException(
                 "Checklist must be completed in order");
 
-        // 8. Final submission wajib evidence
-        if (nextItem.ModuleItem!.IsFinalSubmission &&
+        // 7. Final submission wajib evidence
+        if (nextItem.ModuleItem.IsFinalSubmission &&
             string.IsNullOrWhiteSpace(request.EvidenceUrl))
         {
             throw new InvalidOperationException(
                 "Final assignment requires evidence URL");
         }
 
-        // 9. Submit checklist
+        // 8. Submit checklist
         nextItem.IsCompleted = true;
         nextItem.EvidenceUrl = request.EvidenceUrl;
         nextItem.Feedback = request.Feedback;
         nextItem.CompletedAt = DateTime.UtcNow;
 
-        // 10. Update progress
+        // 9. Update progress
         var completedCount = orderedItems.Count(i => i.IsCompleted);
         var totalCount = orderedItems.Count;
 
         enrollment.CurrentProgress =
             (int)Math.Round((double)completedCount / totalCount * 100);
 
-        // 11. PENENTUAN STATUS ENROLLMENT
+        // 10. Penentuan status enrollment
         if (completedCount == totalCount)
         {
-            if (nextItem.ModuleItem.IsFinalSubmission)
-            {
-                // FINAL PROJECT MASUK TAHAP REVIEW
-                enrollment.Status = EnrollmentStatus.OnGoing;
-            }
-            else
+            if (!nextItem.ModuleItem.IsFinalSubmission)
             {
                 enrollment.Status = EnrollmentStatus.Completed;
                 enrollment.CompletedDate = DateTime.UtcNow;
             }
+
+            // enrollment.Status = EnrollmentStatus.Completed; ini buat pengecekan tanpa review manager
+            // enrollment.CompletedDate = DateTime.UtcNow;
+            // kalau final submission → tetap OnGoing (menunggu review)
         }
 
         enrollment.UpdatedAt = DateTime.UtcNow;
 
-        // 12. TRANSACTION
+        // 11. Transaction
         await _unitOfWork.CommitTransactionAsync(async () =>
         {
             await _enrollmentItemRepository.UpdateAsync(nextItem);
             await _enrollmentRepository.UpdateAsync(enrollment);
         }, cancellationToken);
 
-        // 13. Mapping response
+        // 12. Mapping response
         var module = await _moduleRepository
-            .GetByIdAsync(enrollment.ModuleId, cancellationToken);
+            .GetByIdAsync(enrollment.ModuleId, cancellationToken)
+            ?? throw new InvalidOperationException("Module not found");
 
         var sections = orderedItems.Select(ei => new EnrollmentItemDto(
             EnrollmentItemId: ei.Id,
@@ -229,7 +214,7 @@ public class EnrollService : IEnrollService
 
         return new EnrollmentResponse(
             EnrollmentId: enrollment.Id,
-            ModuleId: module!.Id,
+            ModuleId: module.Id,
             ModuleTitle: module.Title!,
             ModuleDescription: module.Description!,
             StartDate: enrollment.StartDate,
@@ -241,36 +226,44 @@ public class EnrollService : IEnrollService
         );
     }
 
-    public async Task<EnrollmentResponse> EnrollAsync(string email, Guid moduleId, CancellationToken cancellationToken)
+
+    public async Task<EnrollmentResponse> EnrollAsync(
+    Guid accountId,
+    Guid moduleId,
+    CancellationToken cancellationToken)
     {
-        // 1. Ambil account dari email
-        var account = await _accountRepository
-            .FirstOrDefaultAsync(a => a.Email == email);
-
-        if (account is null)
-            throw new InvalidOperationException("Account not found");
-
-        // 2. Ambil employee (opsional tapi relevan)
+        // 1. Ambil employee (berdasarkan accountId dari JWT)
         var employee = await _employeeRepository
-            .GetByAccountIdAsync(account.Id, cancellationToken);
+            .GetByAccountIdAsync(accountId, cancellationToken);
 
         if (employee is null)
             throw new InvalidOperationException("Employee not found");
 
-        // 3. Cek idle
+        // 2. Cek idle
         if (!employee.IsIdle)
             throw new InvalidOperationException("Employee is not idle");
 
-        // 4. Cek enrollment aktif
+        // 3. Cek enrollment aktif
         var activeEnrollment =
             await _enrollmentRepository
-                .GetActiveByUserIdAsync(account.Id, cancellationToken);
+                .GetActiveByUserIdAsync(accountId, cancellationToken);
 
         if (activeEnrollment is not null)
             throw new InvalidOperationException("User already has active enrollment");
 
-        // 5. Ambil module
-        var module = await _moduleRepository.GetByIdWithItemsAsync(moduleId, cancellationToken);
+        // 3.1 Cek apakah module PERNAH diselesaikan
+        var hasCompletedModule =
+            await _enrollmentRepository
+                .HasCompletedModuleAsync(accountId, moduleId, cancellationToken);
+
+        if (hasCompletedModule)
+            throw new InvalidOperationException(
+                "You have already completed this module");
+
+
+        // 4. Ambil module + items
+        var module = await _moduleRepository
+            .GetByIdWithItemsAsync(moduleId, cancellationToken);
 
         if (module is null)
             throw new InvalidOperationException("Module not found");
@@ -278,11 +271,11 @@ public class EnrollService : IEnrollService
         if (!module.Items.Any())
             throw new InvalidOperationException("Module has no sections");
 
-        // 6. Create enrollment
+        // 5. Create enrollment
         var enrollment = new Enrollment
         {
             Id = Guid.NewGuid(),
-            AccountId = account.Id, // ✅ AKHIRNYA
+            AccountId = accountId, // ✅ source of truth
             ModuleId = moduleId,
             StartDate = DateTime.UtcNow,
             TargetDate = DateTime.UtcNow.AddDays(module.EstimatedDays),
@@ -291,7 +284,7 @@ public class EnrollService : IEnrollService
             CurrentProgress = 0
         };
 
-        // 7. Enrollment items
+        // 6. Generate enrollment items
         var enrollmentItems = module.Items
             .OrderBy(i => i.OrderIndex)
             .Select(i => new EnrollmentItem
@@ -303,13 +296,14 @@ public class EnrollService : IEnrollService
             })
             .ToList();
 
+        // 7. Transaction
         await _unitOfWork.CommitTransactionAsync(async () =>
         {
             await _enrollmentRepository.CreateAsync(enrollment, cancellationToken);
             await _enrollmentItemRepository.CreateManyAsync(enrollmentItems, cancellationToken);
         }, cancellationToken);
 
-        // 7. Mapping ke response (UI-ready)
+        // 8. Mapping response (UI-ready)
         var sections = enrollmentItems.Select(ei =>
         {
             var item = module.Items.First(i => i.Id == ei.ModuleItemId);
@@ -342,23 +336,21 @@ public class EnrollService : IEnrollService
         );
     }
 
-    public async Task<EnrollmentResponse?> GetCurrentEnrollmentAsync(string email, CancellationToken cancellationToken)
-    {
-        // 1. Ambil account dari email (JWT source of truth)
-        var account =
-            await _accountRepository.GetByEmailAsync(email, cancellationToken)
-            ?? throw new InvalidOperationException("Account not found");
 
-        // 2. Ambil employee
-        var employee =
-            await _employeeRepository.GetByAccountIdAsync(account.Id, cancellationToken)
+    public async Task<EnrollmentResponse?> GetCurrentEnrollmentAsync(
+    Guid accountId,
+    CancellationToken cancellationToken)
+    {
+        // 1. Ambil employee berdasarkan accountId (JWT source of truth)
+        var employee = await _employeeRepository
+            .GetByAccountIdAsync(accountId, cancellationToken)
             ?? throw new InvalidOperationException("Employee not found");
 
-        // 3. Ambil enrollment aktif
-        var activeEnrollment =
-            await _enrollmentRepository.GetActiveByUserIdAsync(account.Id, cancellationToken);
+        // 2. Ambil enrollment aktif (OnGoing)
+        var activeEnrollment = await _enrollmentRepository
+            .GetActiveByUserIdAsync(accountId, cancellationToken);
 
-        // 4. Jika employee tidak idle → auto pause
+        // 3. Jika employee tidak idle → auto pause
         if (!employee.IsIdle)
         {
             if (activeEnrollment is not null &&
@@ -367,31 +359,26 @@ public class EnrollService : IEnrollService
                 activeEnrollment.Status = EnrollmentStatus.Paused;
                 activeEnrollment.UpdatedAt = DateTime.UtcNow;
 
-                await _unitOfWork.CommitTransactionAsync(async () =>
-                {
-                    await _enrollmentRepository.UpdateAsync(activeEnrollment);
-                }, cancellationToken);
+                await _enrollmentRepository.UpdateAsync(activeEnrollment);
             }
 
             return null; // learning disembunyikan
         }
 
-        // 5. Idle tapi tidak ada enrollment
+        // 4. Idle tapi tidak ada enrollment aktif
         if (activeEnrollment is null)
             return null;
 
-        // 6. Ambil module
-        var module =
-            await _moduleRepository.GetByIdAsync(activeEnrollment.ModuleId, cancellationToken)
+        // 5. Ambil module
+        var module = await _moduleRepository
+            .GetByIdAsync(activeEnrollment.ModuleId, cancellationToken)
             ?? throw new InvalidOperationException("Module not found");
 
-        // 7. Ambil enrollment items
-        var enrollmentItems =
-            await _enrollmentItemRepository.GetByEnrollmentIdAsync(
-                activeEnrollment.Id,
-                cancellationToken);
+        // 6. Ambil enrollment items
+        var enrollmentItems = await _enrollmentItemRepository
+            .GetByEnrollmentIdAsync(activeEnrollment.Id, cancellationToken);
 
-        // 8. Mapping sections
+        // 7. Mapping sections
         var sections = enrollmentItems
             .OrderBy(ei => ei.ModuleItem!.OrderIndex)
             .Select(ei => new EnrollmentItemDto(
@@ -408,7 +395,7 @@ public class EnrollService : IEnrollService
             ))
             .ToList();
 
-        // 9. Return response
+        // 8. Return response
         return new EnrollmentResponse(
             EnrollmentId: activeEnrollment.Id,
             ModuleId: module.Id,
@@ -423,22 +410,20 @@ public class EnrollService : IEnrollService
         );
     }
 
-    public async Task<List<EnrollmentResponse>> GetEnrollmentHistoryAsync(string email, CancellationToken cancellationToken)
-    {
-        // 1. Ambil account dari email (JWT source of truth)
-        var account = await _accountRepository
-            .GetByEmailAsync(email, cancellationToken)
-            ?? throw new InvalidOperationException("Account not found");
 
-        // 2. Validasi employee (business rule)
+    public async Task<List<EnrollmentResponse>> GetEnrollmentHistoryAsync(
+    Guid accountId,
+    CancellationToken cancellationToken)
+    {
+        // 1. Validasi employee (business rule)
         _ = await _employeeRepository
-            .GetByAccountIdAsync(account.Id, cancellationToken)
+            .GetByAccountIdAsync(accountId, cancellationToken)
             ?? throw new InvalidOperationException("Employee not found");
 
-        // 3. Ambil enrollment COMPLETED
+        // 2. Ambil enrollment COMPLETED
         var completedEnrollments =
             await _enrollmentRepository
-                .GetCompletedByUserIdAsync(account.Id, cancellationToken);
+                .GetCompletedByUserIdAsync(accountId, cancellationToken);
 
         if (!completedEnrollments.Any())
             return new List<EnrollmentResponse>();
@@ -447,17 +432,17 @@ public class EnrollService : IEnrollService
 
         foreach (var enrollment in completedEnrollments)
         {
-            // 4. Ambil module
+            // 3. Ambil module
             var module = await _moduleRepository
                 .GetByIdAsync(enrollment.ModuleId, cancellationToken)
                 ?? throw new InvalidOperationException("Module not found");
 
-            // 5. Ambil enrollment items + ModuleItem
+            // 4. Ambil enrollment items + ModuleItem
             var enrollmentItems =
                 await _enrollmentItemRepository
                     .GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
 
-            // 6. Mapping sections
+            // 5. Mapping sections
             var sections = enrollmentItems
                 .OrderBy(ei => ei.ModuleItem!.OrderIndex)
                 .Select(ei => new EnrollmentItemDto(
@@ -491,44 +476,39 @@ public class EnrollService : IEnrollService
         return responses;
     }
 
-    public async Task<EnrollmentResponse> ResumeEnrollmentAsync(Guid enrollmentId, string email, CancellationToken cancellationToken)
-    {
-        // 1. Ambil account dari email (JWT source of truth)
-        var account = await _accountRepository
-            .GetByEmailAsync(email, cancellationToken)
-            ?? throw new InvalidOperationException("Account not found");
 
-        // 2. Ambil employee
+    public async Task<EnrollmentResponse> ResumeEnrollmentAsync(
+    Guid enrollmentId,
+    Guid accountId,
+    CancellationToken cancellationToken)
+    {
+        // 1. Ambil employee berdasarkan accountId (JWT)
         var employee = await _employeeRepository
-            .GetByAccountIdAsync(account.Id, cancellationToken)
+            .GetByAccountIdAsync(accountId, cancellationToken)
             ?? throw new InvalidOperationException("Employee not found");
 
-        // 3. Employee harus idle
+        // 2. Employee harus idle
         if (!employee.IsIdle)
             throw new InvalidOperationException(
                 "Enrollment cannot be resumed while employee is not idle");
 
-        // 4. Ambil enrollment
+        // 3. Ambil enrollment MILIK account (ANTI-HACK)
         var enrollment = await _enrollmentRepository
-            .GetByIdAsync(enrollmentId, cancellationToken)
+            .GetByIdAndAccountIdAsync(enrollmentId, accountId, cancellationToken)
             ?? throw new InvalidOperationException("Enrollment not found");
 
-        // 5. Enrollment harus MILIK employee (ANTI-HACK)
-        if (enrollment.AccountId != account.Id)
-            throw new InvalidOperationException("Access denied");
-
-        // 6. Enrollment harus PAUSED
+        // 4. Enrollment harus PAUSED
         if (enrollment.Status != EnrollmentStatus.Paused)
             throw new InvalidOperationException(
                 "Only paused enrollment can be resumed");
 
-        // 7. Resume enrollment
+        // 5. Resume enrollment
         enrollment.Status = EnrollmentStatus.OnGoing;
         enrollment.UpdatedAt = DateTime.UtcNow;
 
         await _enrollmentRepository.UpdateAsync(enrollment);
 
-        // 8. Ambil module + enrollment items
+        // 6. Ambil module + enrollment items
         var module = await _moduleRepository
             .GetByIdAsync(enrollment.ModuleId, cancellationToken)
             ?? throw new InvalidOperationException("Module not found");
@@ -536,7 +516,7 @@ public class EnrollService : IEnrollService
         var enrollmentItems = await _enrollmentItemRepository
             .GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
 
-        // 9. Mapping sections
+        // 7. Mapping sections
         var sections = enrollmentItems
             .OrderBy(ei => ei.ModuleItem!.OrderIndex)
             .Select(ei => new EnrollmentItemDto(
@@ -553,7 +533,7 @@ public class EnrollService : IEnrollService
             ))
             .ToList();
 
-        // 10. Response
+        // 8. Response
         return new EnrollmentResponse(
             EnrollmentId: enrollment.Id,
             ModuleId: module.Id,
@@ -567,5 +547,6 @@ public class EnrollService : IEnrollService
             Sections: sections
         );
     }
+
 
 }
