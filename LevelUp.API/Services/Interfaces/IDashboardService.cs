@@ -5,9 +5,13 @@ namespace LevelUp.API.Services.Interfaces;
 
 public interface IDashboardService
 {
-    Task<DashboardResponse> GetDashboardAsync(Guid managerId);
-    Task<IEnumerable<EmployeeListResponse>> GetEmployeesAsync(Guid managerId);
-    Task<EmployeeDetailResponse> GetEmployeeDetailAsync(Guid employeeId, Guid managerId, CancellationToken cancellationToken);
+    Task<DashboardResponse> GetDashboardAsync(Guid accountIdFromJwt);
+    Task<IEnumerable<EmployeeListResponse>> GetEmployeesAsync(Guid managerAccountId);
+    Task<EmployeeDetailResponse> GetEmployeeDetailAsync(
+        Guid? employeeId,
+        Guid? accountIdFromJwt,
+        CancellationToken cancellationToken
+    );
     Task<bool> UpdateEmployeeStatusAsync(Guid employeeId, bool isIdle, CancellationToken cancellationToken);
-    Task<IEnumerable<EmployeeEnrollResponse>> GetEnrollmentsByManagerId(Guid managerId);
+    Task<IEnumerable<EmployeeEnrollResponse>> GetEnrollmentsByManagerId(Guid accountIdFromJwt);
 }

@@ -23,11 +23,30 @@ public class DashboardService : IDashboardService
         _context = context;
     }
 
-    public async Task<DashboardResponse> GetDashboardAsync(Guid managerId)
+    /// <summary>
+    /// Get summary dashboard for manager
+    /// </summary>
+    public async Task<DashboardResponse> GetDashboardAsync(Guid accountIdFromJwt)
     {
-        int totalModules = await _moduleRepository.CountModulesOwnedByManager(managerId);
-        int totalEnroll = await _moduleRepository.CountEnrolledEmployeesByManager(managerId);
+        // Ambil employee yang terkait dengan accountId
+        var managerEmployee = await _employeeRepository
+            .GetByAccountIdAsync(accountIdFromJwt, CancellationToken.None);
 
+        if (managerEmployee == null)
+            throw new Exception("Manager not found");
+
+        var managerEmployeeId = managerEmployee.Id;
+
+        // Hitung total modules yang dibuat manager
+        int totalModules = await _context.Modules
+            .CountAsync(m => m.CreatedBy == managerEmployeeId);
+
+        // Hitung total enrollments dari modul yang dibuat manager
+        int totalEnroll = await _context.Enrollments
+            .Include(e => e.Module)
+            .CountAsync(e => e.Module != null && e.Module.CreatedBy == managerEmployeeId);
+
+        // Hitung total employee & idle
         var allEmployees = await _employeeRepository.GetAllEmployees();
         int totalIdle = allEmployees.Count(e => e.IsIdle);
         int totalEmployee = allEmployees.Count();
@@ -35,9 +54,19 @@ public class DashboardService : IDashboardService
         return new DashboardResponse(totalIdle, totalEnroll, totalModules, totalEmployee);
     }
 
-    public async Task<EmployeeDetailResponse> GetEmployeeDetailAsync(Guid employeeId, Guid managerId, CancellationToken cancellationToken)
+    // Employee detail, bisa pakai employeeId atau fallback ke accountId
+    public async Task<EmployeeDetailResponse> GetEmployeeDetailAsync(
+        Guid? employeeId,
+        Guid? accountIdFromJwt,
+        CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetByIdWithAccountAsync(employeeId, cancellationToken);
+        Employee? employee = null;
+
+        if (employeeId.HasValue)
+            employee = await _employeeRepository.GetByIdWithAccountAsync(employeeId.Value, cancellationToken);
+        else if (accountIdFromJwt.HasValue)
+            employee = await _employeeRepository.GetByAccountIdAsync(accountIdFromJwt.Value, cancellationToken);
+
         if (employee == null || employee.Account == null)
             throw new Exception("Employee not found");
 
@@ -52,7 +81,8 @@ public class DashboardService : IDashboardService
         );
     }
 
-    public async Task<IEnumerable<EmployeeListResponse>> GetEmployeesAsync(Guid managerId)
+    // List semua employee
+    public async Task<IEnumerable<EmployeeListResponse>> GetEmployeesAsync(Guid managerAccountId)
     {
         var allEmployees = await _employeeRepository.GetAllEmployees();
         var filtered = allEmployees.Where(e => e.Account != null && e.Account.Role == UserRole.Employee);
@@ -66,49 +96,48 @@ public class DashboardService : IDashboardService
         ));
     }
 
-   public async Task<bool> UpdateEmployeeStatusAsync(Guid employeeId, bool isIdle, CancellationToken cancellationToken)
-{
-    // Ambil employee langsung dari DbContext agar tracked
-    var employee = await _context.Employees
-        .Include(e => e.Account) // optional, kalau butuh Account
-        .FirstOrDefaultAsync(e => e.Id == employeeId, cancellationToken);
-
-    if (employee == null)
-        throw new Exception("Employee not found");
-
-    employee.IsIdle = isIdle;
-
-    // EF Core sudah tracked, jadi SaveChangesAsync cukup
-    var updated = await _context.SaveChangesAsync(cancellationToken) > 0;
-
-    return updated;
-}
-
-
-    public async Task<IEnumerable<EmployeeEnrollResponse>> GetEnrollmentsByManagerId(Guid managerId)
+    // Update status idle employee
+    public async Task<bool> UpdateEmployeeStatusAsync(Guid employeeId, bool isIdle, CancellationToken cancellationToken)
     {
+        var employee = await _context.Employees
+            .Include(e => e.Account)
+            .FirstOrDefaultAsync(e => e.Id == employeeId, cancellationToken);
+
+        if (employee == null)
+            throw new Exception("Employee not found");
+
+        employee.IsIdle = isIdle;
+
+        return await _context.SaveChangesAsync(cancellationToken) > 0;
+    }
+
+    // Enrollments berdasarkan manager
+    public async Task<IEnumerable<EmployeeEnrollResponse>> GetEnrollmentsByManagerId(Guid accountIdFromJwt)
+    {
+        // Ambil employee manager
+        var managerEmployee = await _employeeRepository
+            .GetByAccountIdAsync(accountIdFromJwt, CancellationToken.None);
+
+        if (managerEmployee == null)
+            throw new Exception("Manager not found");
+
+        var managerEmployeeId = managerEmployee.Id;
+
         var enrollments = await _context.Enrollments
             .Include(e => e.Account).ThenInclude(a => a.Employee)
             .Include(e => e.Module)
-            .Where(e => e.Module != null && e.Module.CreatedBy == managerId)
+            .Where(e => e.Module != null && e.Module.CreatedBy == managerEmployeeId)
             .ToListAsync();
 
         return enrollments
             .Where(e => e.Account?.Employee != null)
-            .Select(e => new
-            {
-                Enrollment = e,
-                Employee = e.Account!.Employee!, // ! karena sudah di-filter
-                Email = e.Account!.Email ?? ""
-            })
-            .GroupBy(x => x.Employee.Id)
-            .Select(g => new EmployeeEnrollResponse(
-                g.Key,
-                g.First().Employee.FirstName ?? "",
-                g.First().Employee.LastName ?? "",
-                g.First().Email,
-                g.First().Employee.IsIdle,
-                g.First().Enrollment.Status.ToString()
+            .Select(e => new EmployeeEnrollResponse(
+                e.Account.Employee.Id,
+                e.Account.Employee.FirstName ?? "",
+                e.Account.Employee.LastName ?? "",
+                e.Account.Email ?? "",
+                e.Account.Employee.IsIdle,
+                e.Status.ToString()
             ))
             .ToList();
     }

@@ -1,12 +1,15 @@
+using System.Security.Claims;
 using LevelUp.API.DTOs.Dashboards;
 using LevelUp.API.Services.Interfaces;
 using LevelUp.API.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LevelUp.API.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
+[Authorize(Roles = "Manager")]
 public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;
@@ -16,43 +19,83 @@ public class DashboardController : ControllerBase
         _dashboardService = dashboardService;
     }
 
+    // DASHBOARD STATS
     [HttpGet("manager/dashboard")]
-    public async Task<IActionResult> GetDashboard([FromQuery] Guid managerId)
+    public async Task<IActionResult> GetDashboard()
     {
-        var result = await _dashboardService.GetDashboardAsync(managerId);
-        return Ok(new ApiResponse<IEnumerable<DashboardResponse>>(new List<DashboardResponse> { result }));
+        var accountIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!Guid.TryParse(accountIdClaim, out var accountId))
+            return Unauthorized("Invalid account id in token");
+
+        var result = await _dashboardService.GetDashboardAsync(accountId);
+
+        return Ok(new ApiResponse<IEnumerable<DashboardResponse>>(
+            new List<DashboardResponse> { result }
+        ));
     }
 
+    // EMPLOYEES
     [HttpGet("manager/employees")]
-    public async Task<IActionResult> GetEmployees([FromQuery] Guid managerId)
+    public async Task<IActionResult> GetEmployees()
     {
-        var result = await _dashboardService.GetEmployeesAsync(managerId);
+        var accountIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!Guid.TryParse(accountIdClaim, out var accountId))
+            return Unauthorized("Invalid account id in token");
+
+        var result = await _dashboardService.GetEmployeesAsync(accountId);
         return Ok(new ApiResponse<IEnumerable<EmployeeListResponse>>(result));
     }
 
+    // EMPLOYEE DETAIL
     [HttpGet("manager/employees/{id}/detail")]
-    public async Task<IActionResult> GetEmployeeDetail([FromRoute] Guid id, [FromQuery] Guid managerId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetEmployeeDetail(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var result = await _dashboardService.GetEmployeeDetailAsync(id, managerId, cancellationToken);
+        var accountIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!Guid.TryParse(accountIdClaim, out var accountId))
+            return Unauthorized("Invalid account id in token");
+
+        var result = await _dashboardService.GetEmployeeDetailAsync(
+            id,
+            accountId,
+            cancellationToken
+        );
+
         return Ok(new ApiResponse<EmployeeDetailResponse>(result));
     }
-    
-[HttpPatch("employee/{id}/status")]
-public async Task<IActionResult> UpdateEmployeeStatus(
-    [FromRoute] Guid id,
-    [FromBody] UpdateEmployeeStatusRequest request,
-    CancellationToken cancellationToken)
-{
-    var success = await _dashboardService.UpdateEmployeeStatusAsync(id, request.IsIdle, cancellationToken);
-    if (!success) return BadRequest("Failed to update employee status.");
-    return Ok(new ApiResponse<string>("Employee status updated successfully."));
-}
 
-
-    [HttpGet("{Id}/enrollments")]
-    public async Task<IActionResult> GetEnrollmentsByManager(Guid Id)
+    // UPDATE STATUS
+    [HttpPatch("employee/{id}/status")]
+    public async Task<IActionResult> UpdateEmployeeStatus(
+        Guid id,
+        [FromBody] UpdateEmployeeStatusRequest request,
+        CancellationToken cancellationToken)
     {
-        var enrollments = await _dashboardService.GetEnrollmentsByManagerId(Id);
+        var success = await _dashboardService
+            .UpdateEmployeeStatusAsync(id, request.IsIdle, cancellationToken);
+
+        if (!success)
+            return BadRequest("Failed to update employee status");
+
+        return Ok(new ApiResponse<string>("Employee status updated"));
+    }
+
+    // ENROLLMENTS
+    [HttpGet("manager/enrollments")]
+    public async Task<IActionResult> GetEnrollments()
+    {
+        var accountIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!Guid.TryParse(accountIdClaim, out var accountId))
+            return Unauthorized("Invalid account id in token");
+
+        var enrollments =
+            await _dashboardService.GetEnrollmentsByManagerId(accountId);
+
         return Ok(new ApiResponse<IEnumerable<EmployeeEnrollResponse>>(enrollments));
     }
 }
