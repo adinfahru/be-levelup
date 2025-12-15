@@ -5,7 +5,7 @@ using LevelUp.API.Services.Interfaces;
 
 namespace LevelUp.API.Services.Implementations;
 
-public class EnrollService : IEnrollService
+public class EnrollmentService : IEnrollmentService
 {
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly IUnitOfWork _unitOfWork;
@@ -15,7 +15,7 @@ public class EnrollService : IEnrollService
     private readonly IEmployeeRepository _employeeRepository;
     private readonly IEnrollmentItemRepository _enrollmentItemRepository;
 
-    public EnrollService(
+    public EnrollmentService(
         IEnrollmentRepository enrollmentRepository,
         IUnitOfWork unitOfWork,
         IModuleRepository moduleRepository,

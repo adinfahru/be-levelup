@@ -9,13 +9,13 @@ namespace LevelUp.API.Controllers;
 [ApiController]
 [Route("api/v1/enrollments")]
 [Authorize]
-public class EnrollController : ControllerBase
+public class EnrollmentController : ControllerBase
 {
-    private readonly IEnrollService _enrollService;
+    private readonly IEnrollmentService _enrollmentService;
 
-    public EnrollController(IEnrollService enrollService)
+    public EnrollmentController(IEnrollmentService enrollmentService)
     {
-        _enrollService = enrollService;
+        _enrollmentService = enrollmentService;
     }
 
     // =========================
@@ -29,7 +29,7 @@ public class EnrollController : ControllerBase
         var accountId = User.GetAccountId(); // ✅ JWT source of truth
 
         var enrollment =
-            await _enrollService.GetCurrentEnrollmentAsync(
+            await _enrollmentService.GetCurrentEnrollmentAsync(
                 accountId,
                 cancellationToken);
 
@@ -50,7 +50,7 @@ public class EnrollController : ControllerBase
     {
         var accountId = User.GetAccountId();
 
-        var response = await _enrollService.EnrollAsync(
+        var response = await _enrollmentService.EnrollAsync(
             accountId,
             request.ModuleId,
             cancellationToken);
@@ -73,7 +73,7 @@ public class EnrollController : ControllerBase
         var accountId = User.GetAccountId();
 
         var response =
-            await _enrollService.SubmitEnrollmentItemAsync(
+            await _enrollmentService.SubmitEnrollmentItemAsync(
                 enrollmentid,
                 accountId,
                 request,
@@ -94,7 +94,7 @@ public class EnrollController : ControllerBase
         var accountId = User.GetAccountId();
 
         var progress =
-            await _enrollService.GetEnrollmentProgressAsync(
+            await _enrollmentService.GetEnrollmentProgressAsync(
                 enrollmentid,
                 accountId,
                 cancellationToken);
@@ -114,7 +114,7 @@ public class EnrollController : ControllerBase
         var accountId = User.GetAccountId();
 
         var response =
-            await _enrollService.ResumeEnrollmentAsync(
+            await _enrollmentService.ResumeEnrollmentAsync(
                 enrollmentid,
                 accountId,
                 cancellationToken);
@@ -133,7 +133,7 @@ public class EnrollController : ControllerBase
         var accountId = User.GetAccountId();
 
         var history =
-            await _enrollService.GetEnrollmentHistoryAsync(
+            await _enrollmentService.GetEnrollmentHistoryAsync(
                 accountId,
                 cancellationToken);
 

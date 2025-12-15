@@ -3,7 +3,7 @@ using LevelUp.API.Entity;
 
 namespace LevelUp.API.Services.Interfaces;
 
-public interface IEnrollService
+public interface IEnrollmentService
 {
     Task<EnrollmentResponse> EnrollAsync(Guid accountId, Guid moduleId, CancellationToken cancellationToken);
 
