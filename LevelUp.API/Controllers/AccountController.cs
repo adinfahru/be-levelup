@@ -1,44 +1,59 @@
 using LevelUp.API.DTOs.AccountManagement;
 using LevelUp.API.Services.Interfaces;
 using LevelUp.API.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LevelUp.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-public class AccountController : ControllerBase
+[Route("api/v1/users")]
+[Authorize(Roles = "Admin")]
+public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
 
-    public AccountController(IUserService userService)
+    public UserController(IUserService userService)
     {
         _userService = userService;
     }
 
-    [HttpGet("admin/users")]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    [HttpGet]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 10,
+        [FromQuery] string? role = null,
+        [FromQuery] bool? isActive = null,
+        CancellationToken cancellationToken = default)
     {
-        var data = await _userService.GetAllAccountsAsync(cancellationToken);
-        return Ok(new ApiResponse<IEnumerable<UserResponse>>(200,"Success", data));
-        
+        var (data, total) = await _userService.GetAllAccountsAsync(page, limit, role, isActive, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<UserResponse>>(200, "Success", data, total));
     }
 
-    [HttpPost("admin/users")]
-    public async Task<IActionResult> CreateAccount(UserRequest request, CancellationToken cancellationToken)
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var data = await _userService.GetAccountByIdAsync(id, cancellationToken);
+        return Ok(new ApiResponse<UserResponse>(200, "Success", data));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateAccount(
+        [FromBody] UserRequest request,
+        CancellationToken cancellationToken = default)
     {
         await _userService.CreateAccountAsync(request, cancellationToken);
         return Ok(new ApiResponse<UserResponse>("Account Success Create"));
     }
 
-    [HttpPut("admin/users/{accountId}")]
-    public async Task<IActionResult> UpdateAccount(Guid accountId, UserRequest request, CancellationToken cancellationToken)
+    [HttpPut("{accountId}")]
+    public async Task<IActionResult> UpdateAccount(Guid accountId, [FromBody] UserRequest request, CancellationToken cancellationToken)
     {
         await _userService.UpdateAccountAsync(accountId, request, cancellationToken);
         return Ok(new ApiResponse<object>("Account Success Update"));
     }
 
-    [HttpDelete("admin/users/{accountId}")]
+    [HttpDelete("{accountId}")]
     public async Task<IActionResult> DeleteAccount(Guid accountId, CancellationToken cancellationToken)
     {
         await _userService.DeleteAccountAsync(accountId, cancellationToken);

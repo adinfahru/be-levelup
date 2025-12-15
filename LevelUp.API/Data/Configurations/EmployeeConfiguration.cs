@@ -38,12 +38,6 @@ namespace LevelUp.API.Data.Configurations
                 .WithMany(p => p.Employees)
                 .HasForeignKey(e => e.PositionId)
                 .OnDelete(DeleteBehavior.SetNull);
-
-            builder
-                .HasMany(e => e.CreatedModules)
-                .WithOne(m => m.Creator)
-                .HasForeignKey(m => m.CreatedBy)
-                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

@@ -34,7 +34,7 @@ public class AuthService : IAuthService
     if (!_hashHandler.ValidateHash(request.Password, account.PasswordHash))
       return null;
 
-    var token = _jwtTokenHandler.GenerateToken(account.Email, account.Role.ToString());
+    var token = _jwtTokenHandler.GenerateToken(account.Id.ToString(), account.Email, account.Role.ToString());
     var expiresAt = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"]));
 
     return new LoginResponse(token, account.Email, account.Role.ToString(), expiresAt);

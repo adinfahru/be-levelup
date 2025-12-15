@@ -17,6 +17,5 @@ namespace LevelUp.API.Entity
         // Navigation properties
         public Account? Account { get; set; }
         public Position? Position { get; set; }
-        public ICollection<Module> CreatedModules { get; set; } = new List<Module>();
     }
 }

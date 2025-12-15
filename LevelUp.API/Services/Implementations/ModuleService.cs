@@ -22,13 +22,14 @@ public class ModuleService : IModuleService
     _unitOfWork = unitOfWork;
   }
 
-  public async Task<(List<ModuleResponse> items, int total)> GetAllAsync(
+  public Task<(List<ModuleResponse> items, int total)> GetAllAsync(
       int page,
       int limit,
       bool? isActive,
       Guid? createdBy)
   {
-    var query = (await _moduleRepository.GetAllAsync(CancellationToken.None)).AsQueryable();
+    IQueryable<Module> query = _moduleRepository.GetQueryable()
+        .Include(m => m.Items);
 
     if (isActive.HasValue)
       query = query.Where(m => m.IsActive == isActive.Value);
@@ -53,7 +54,7 @@ public class ModuleService : IModuleService
         ))
         .ToList();
 
-    return (items, total);
+    return Task.FromResult((items, total));
   }
 
   public async Task<ModuleDetailResponse?> GetByIdAsync(Guid id)
@@ -116,27 +117,28 @@ public class ModuleService : IModuleService
       CreatedAt = DateTime.UtcNow
     };
 
-    await _moduleRepository.CreateAsync(module, CancellationToken.None);
-
-    if (request.Items != null)
+    await _unitOfWork.CommitTransactionAsync(async () =>
     {
-      foreach (var itemRequest in request.Items)
-      {
-        var item = new ModuleItem
-        {
-          Id = Guid.NewGuid(),
-          ModuleId = module.Id,
-          Title = itemRequest.Title,
-          OrderIndex = itemRequest.OrderIndex,
-          Descriptions = itemRequest.Description,
-          Url = itemRequest.Url,
-          IsFinalSubmission = itemRequest.IsFinalSubmission
-        };
-        await _moduleItemRepository.CreateAsync(item, CancellationToken.None);
-      }
-    }
+      await _moduleRepository.CreateAsync(module, CancellationToken.None);
 
-    await _unitOfWork.CommitTransactionAsync(() => Task.CompletedTask, CancellationToken.None);
+      if (request.Items != null)
+      {
+        foreach (var itemRequest in request.Items)
+        {
+          var item = new ModuleItem
+          {
+            Id = Guid.NewGuid(),
+            ModuleId = module.Id,
+            Title = itemRequest.Title,
+            OrderIndex = itemRequest.OrderIndex,
+            Descriptions = itemRequest.Description,
+            Url = itemRequest.Url,
+            IsFinalSubmission = itemRequest.IsFinalSubmission
+          };
+          await _moduleItemRepository.CreateAsync(item, CancellationToken.None);
+        }
+      }
+    }, CancellationToken.None);
 
     return new ModuleResponse(
         module.Id,

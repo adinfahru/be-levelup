@@ -13,7 +13,7 @@ namespace LevelUpAPI.Services
 
         public PositionService(IPositionRepository positionRepository, IUnitOfWork unitOfWork)
         {
-            _positionRepository = positionRepository;  
+            _positionRepository = positionRepository;
             _unitOfWork = unitOfWork;
         }
 
@@ -38,31 +38,34 @@ namespace LevelUpAPI.Services
             if (position is null)
                 throw new NullReferenceException("Position Id not found");
 
+            position.IsActive = false;
             await _unitOfWork.CommitTransactionAsync(async () =>
             {
-                await _positionRepository.DeleteAsync(position);
+                await _positionRepository.UpdateAsync(position);
             }, cancellationToken);
         }
 
-        public async Task<IEnumerable<PositionResponse>> GetAllPositionsAsync(CancellationToken cancellationToken)
+        public async Task<(IEnumerable<PositionResponse> items, int total)> GetAllPositionsAsync(bool? isActive, CancellationToken cancellationToken)
         {
-            // var positions = await _positionRepository.GetAllAsync(cancellationToken);
-            var positions = (await _positionRepository.GetAllAsync(cancellationToken))
-                .Cast<Position>()
-                .ToList();
+            var query = (await _positionRepository.GetAllAsync(cancellationToken))
+                .Cast<Position>();
 
+            // Filter by isActive only if parameter is provided
+            if (isActive.HasValue)
+                query = query.Where(p => p.IsActive == isActive.Value);
 
-            if (!positions.Any())
-                throw new NullReferenceException("No Positions Found");
+            var positions = query.ToList();
+            var total = positions.Count;
 
-            return positions.Select(position =>
-            new PositionResponse(
-                position.Id,
-                position.Title ?? string.Empty,
-                position.IsActive
-            )
-        );
+            var items = positions.Select(position =>
+                new PositionResponse(
+                    position.Id,
+                    position.Title ?? string.Empty,
+                    position.IsActive
+                )
+            );
 
+            return (items, total);
         }
 
         public async Task<PositionResponse?> GetPositionByIdAsync(Guid id, CancellationToken cancellationToken)

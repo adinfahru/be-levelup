@@ -1,0 +1,427 @@
+# LevelUp API Tests
+# Install "REST Client" extension in VS Code to run these tests
+# Click "Send Request" above each request to test
+
+@baseUrl = http://localhost:5067/api/v1
+
+###############################################
+# 1. AUTHENTICATION
+###############################################
+
+### 1.1 Login as Admin (Auto-save token)
+# @name adminLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@levelup.com",
+  "password": "Admin123!"
+}
+
+### 1.2 Login as Manager (Auto-save token)
+# @name managerLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "manager@levelup.com",
+  "password": "Manager123!"
+}
+
+### 1.3 Login as Employee (Auto-save token)
+# @name employeeLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "employee@levelup.com",
+  "password": "Employee123!"
+}
+
+###############################################
+# TOKEN VARIABLES (Auto-extracted from login responses)
+###############################################
+
+@adminToken = {{adminLogin.response.body.data.token}}
+@managerToken = {{managerLogin.response.body.data.token}}
+@employeeToken = {{employeeLogin.response.body.data.token}}
+
+### 1.4 Login - Invalid Credentials (Should Fail)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "invalid@example.com",
+  "password": "wrongpassword"
+}
+
+### 1.5 Change Password (Requires Admin Token)
+PUT {{baseUrl}}/auth/change-password
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "currentPassword": "Admin123!",
+  "newPassword": "NewAdmin123!"
+}
+
+###############################################
+# 2. USER MANAGEMENT (Admin Only)
+###############################################
+
+### 2.1 Get All Users (Admin)
+GET {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+
+### 2.2 Get All Users with Filters
+GET {{baseUrl}}/users?page=1&limit=10&role=Employee&isActive=true
+Authorization: Bearer {{adminToken}}
+
+### 2.3 Create New User (Admin)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "password": "John123456",
+  "role": "Admin",
+  "positionId": "14eac010-ecae-46a8-acdc-2a47ece8001e"
+}
+
+### 2.4 Update User (Admin) - Replace {userId} with actual ID
+PUT {{baseUrl}}/users/acc96cb7-dcc6-4742-8299-2b8288fb9a04
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "firstName": "John Updated",
+  "lastName": "Doe Updated",
+  "email": "john.updated@example.com",
+  "password": "NewPassword123",
+  "role": "Manager",
+  "positionId": "14eac010-ecae-46a8-acdc-2a47ece8001e"
+}
+
+### 2.5 Delete User (Admin) - Replace {userId} with actual ID
+DELETE {{baseUrl}}/users/acc96cb7-dcc6-4742-8299-2b8288fb9a04
+Authorization: Bearer {{adminToken}}
+
+### 2.6 Get Users without Token (Should Fail - 401)
+GET {{baseUrl}}/users
+
+### 2.7 Create User as Employee (Should Fail - 403)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
+
+{
+  "firstName": "Unauthorized",
+  "lastName": "User",
+  "email": "unauthorized@example.com",
+  "password": "Test123456",
+  "role": "Employee",
+  "positionId": null
+}
+
+###############################################
+# 3. POSITION MANAGEMENT (Admin Only)
+###############################################
+
+### 3.1 Get All Positions (Admin)
+GET {{baseUrl}}/positions
+Authorization: Bearer {{adminToken}}
+
+### 3.2 Get Position by ID - Replace {positionId}
+GET {{baseUrl}}/positions/14eac010-ecae-46a8-acdc-2a47ece8001e
+Authorization: Bearer {{adminToken}}
+
+### 3.3 Create Position (Admin)
+POST {{baseUrl}}/positions
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "Software Engineer"
+}
+
+### 3.4 Update Position (Admin) - Replace {positionId}
+PUT {{baseUrl}}/positions/378ba241-aade-4360-8975-fda473343c7b
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "Lead Software Engineer"
+}
+
+### 3.5 Delete Position (Admin) - Replace {positionId}
+DELETE {{baseUrl}}/positions/378ba241-aade-4360-8975-fda473343c7b
+Authorization: Bearer {{adminToken}}
+
+### 3.6 Get Positions without Token (Should Fail - 401)
+GET {{baseUrl}}/positions
+
+### 3.7 Create Position as Manager (Should Fail - 403)
+POST {{baseUrl}}/positions
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "Unauthorized Position"
+}
+
+###############################################
+# 4. MODULE MANAGEMENT (Manager & Employee)
+###############################################
+
+### 4.1 Get All Modules (Manager/Employee)
+GET {{baseUrl}}/modules
+Authorization: Bearer {{managerToken}}
+
+### 4.2 Get All Modules with Pagination
+GET {{baseUrl}}/modules?page=1&limit=10&isActive=true
+Authorization: Bearer {{managerToken}}
+
+### 4.3 Get Module by ID - Replace {moduleId}
+GET {{baseUrl}}/modules/61ac00a2-b35a-4784-b83a-61bb1b2471a3
+Authorization: Bearer {{managerToken}}
+
+### 4.4 Create Module (Manager Only)
+POST {{baseUrl}}/modules
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "Advanced C#",
+  "description": "Learn advanced C# concepts and best practices",
+  "estimatedDays": 14,
+  "items": [
+    {
+      "title": "Async/Await Deep Dive",
+      "orderIndex": 1,
+      "description": "Understanding async programming patterns",
+      "url": "https://example.com/resources/async",
+      "isFinalSubmission": false
+    },
+    {
+      "title": "LINQ and Lambda Expressions",
+      "orderIndex": 2,
+      "description": "Mastering LINQ queries",
+      "url": "https://example.com/resources/linq",
+      "isFinalSubmission": false
+    },
+    {
+      "title": "Final Project",
+      "orderIndex": 3,
+      "description": "Build a complete async application",
+      "url": "https://example.com/resources/final-project",
+      "isFinalSubmission": true
+    }
+  ]
+}
+
+### 4.5 Update Module (Manager Only) - Replace {moduleId}
+PUT {{baseUrl}}/modules/e5efb0a7-331d-46f1-a478-d1b551a0662e
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "Advanced C# Programming - Updated",
+  "description": "Learn advanced C# concepts with .NET 8",
+  "estimatedDays": 21
+}
+
+### 4.6 Get Modules without Token (Should Fail - 401)
+GET {{baseUrl}}/modules
+
+### 4.7 Create Module as Employee (Should Fail - 403)
+POST {{baseUrl}}/modules
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
+
+{
+  "title": "Unauthorized Module",
+  "description": "This should fail",
+  "estimatedDays": 7
+}
+
+### 4.8 Get Modules as Admin (Should Fail - 403)
+GET {{baseUrl}}/modules
+Authorization: Bearer {{adminToken}}
+
+###############################################
+# 5. ENROLLMENT MANAGEMENT (Employee)
+###############################################
+
+### 5.1 Get All Enrollments (Employee)
+GET {{baseUrl}}/enrollments
+Authorization: Bearer {{employeeToken}}
+
+### 5.2 Get Current Enrollment (Employee)
+GET {{baseUrl}}/enrollments/current
+Authorization: Bearer {{employeeToken}}
+
+### 5.3 Get Enrollment History (Employee)
+GET {{baseUrl}}/enrollments/history
+Authorization: Bearer {{employeeToken}}
+
+### 5.4 Create Enrollment (Employee) - Replace {moduleId}
+POST {{baseUrl}}/enrollments
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
+
+{
+  "moduleId": "770e8400-e29b-41d4-a716-446655440000"
+}
+
+### 5.5 Resume Enrollment (Employee) - Replace {enrollmentId}
+POST {{baseUrl}}/enrollments/990e8400-e29b-41d4-a716-446655440000/resume
+Authorization: Bearer {{employeeToken}}
+
+### 5.6 Get Enrollment Progress - Replace {enrollmentId}
+GET {{baseUrl}}/enrollments/990e8400-e29b-41d4-a716-446655440000/progress
+Authorization: Bearer {{employeeToken}}
+
+### 5.7 Mark Item as Completed - Replace {enrollmentId}
+POST {{baseUrl}}/enrollments/990e8400-e29b-41d4-a716-446655440000/items
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
+
+{
+  "moduleItemId": "880e8400-e29b-41d4-a716-446655440000",
+  "feedback": "Successfully completed the async programming exercise",
+  "evidenceUrl": "https://github.com/user/async-project"
+}
+
+### 5.8 Submit Final Work - Replace {enrollmentId}
+POST {{baseUrl}}/enrollments/990e8400-e29b-41d4-a716-446655440000/submit
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
+
+{
+  "submissionUrl": "https://github.com/user/final-project",
+  "notes": "Project completed with all requirements met"
+}
+
+###############################################
+# 6. SUBMISSION MANAGEMENT (Manager)
+###############################################
+
+### 6.1 Get All Submissions (Manager)
+GET {{baseUrl}}/submissions
+Authorization: Bearer {{managerToken}}
+
+### 6.2 Get Submissions with Filter
+GET {{baseUrl}}/submissions?page=1&limit=10&status=Pending
+Authorization: Bearer {{managerToken}}
+
+### 6.3 Review Submission - Replace {submissionId}
+POST {{baseUrl}}/submissions/bb0e8400-e29b-41d4-a716-446655440000/review
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "status": "Approved",
+  "feedback": "Excellent work! All requirements met and code quality is outstanding."
+}
+
+### 6.4 Reject Submission - Replace {submissionId}
+POST {{baseUrl}}/submissions/bb0e8400-e29b-41d4-a716-446655440000/review
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "status": "Rejected",
+  "feedback": "Please review the async/await implementation. There are some issues with error handling."
+}
+
+###############################################
+# 7. MANAGER DASHBOARD (Manager)
+###############################################
+
+### 7.1 Get Dashboard Summary (Manager)
+GET {{baseUrl}}/manager/dashboard
+Authorization: Bearer {{managerToken}}
+
+### 7.2 Get Managed Employees (Manager)
+GET {{baseUrl}}/manager/employees
+Authorization: Bearer {{managerToken}}
+
+### 7.3 Get Managed Employees with Filter
+GET {{baseUrl}}/manager/employees?page=1&limit=10&isIdle=false
+Authorization: Bearer {{managerToken}}
+
+### 7.4 Get Employee Details - Replace {employeeId}
+GET {{baseUrl}}/manager/employees/cc0e8400-e29b-41d4-a716-446655440000/detail
+Authorization: Bearer {{managerToken}}
+
+### 7.5 Update Employee Status - Replace {employeeId}
+PATCH {{baseUrl}}/manager/employees/cc0e8400-e29b-41d4-a716-446655440000/status
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "isIdle": true
+}
+
+###############################################
+# 8. ERROR SCENARIOS
+###############################################
+
+### 8.1 Invalid Endpoint (404)
+GET {{baseUrl}}/invalid-endpoint
+Authorization: Bearer {{adminToken}}
+
+### 8.2 Malformed JSON (400)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "firstName": "Test",
+  "lastName": "User",
+  "email": "invalid-email",
+  "password": "short",
+  "role": "InvalidRole"
+}
+
+### 8.3 Missing Required Fields (400)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "firstName": "Test"
+}
+
+### 8.4 Duplicate Email (409)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "firstName": "Admin",
+  "lastName": "User",
+  "email": "admin@levelup.com",
+  "password": "Admin123456",
+  "role": "Admin",
+  "positionId": null
+}
+
+### 8.5 Non-existent Resource (404)
+GET {{baseUrl}}/users/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{adminToken}}
+
+###############################################
+# USAGE INSTRUCTIONS:
+# 1. Login with appropriate role (1.1, 1.2, or 1.3)
+# 2. Token akan tersimpan OTOMATIS ke variabel:
+#    - @adminToken dari adminLogin
+#    - @managerToken dari managerLogin  
+#    - @employeeToken dari employeeLogin
+# 3. Semua request setelah login akan menggunakan token yang sesuai
+# 4. Replace UUIDs dengan actual IDs dari database Anda
+# 5. Test endpoints sesuai user roles yang sudah didefinisikan
+###############################################

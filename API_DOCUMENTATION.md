@@ -18,12 +18,107 @@ LevelUp is an employee development management system that enables employees to e
 
 ### Base URL
 
+**Development:**
 ```
-https://https://localhost:7118/api/v1
+https://localhost:7118
+```
+
+**Production:**
+```
+https://api.levelup.local
 ```
 
 ### API Version
 Current version: **v1**
+
+### Routing Convention
+
+All API endpoints follow the pattern:
+```
+{base_url}/api/v1/{resource}
+```
+
+**Important Notes for .NET Implementation:**
+- Controllers should use `[Route("api/v1/{controller-name}")]` attribute
+- Avoid using `[Route("api/[controller]")]` as it uses the class name (e.g., `ModulesController` → `/api/Modules`)
+- Best practice: Explicitly define routes to maintain consistency between documentation and implementation
+- Example: `[Route("api/v1/auth")]`, `[Route("api/v1/users")]`, `[Route("api/v1/modules")]`
+
+**Full Endpoint Format:**
+```
+{base_url}/api/v1/{resource}/{action}
+```
+
+Example:
+```
+https://localhost:7118/api/v1/auth/login
+https://localhost:7118/api/v1/users
+https://localhost:7118/api/v1/modules
+https://localhost:7118/api/v1/enrollments
+```
+
+---
+
+## API Endpoints Overview
+
+### Authentication
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| POST | `/api/v1/auth/login` | User login | No | - |
+| PUT | `/api/v1/auth/change-password` | Change password | Yes | All |
+
+### User Management
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/users` | Get all users | Yes | Admin |
+| POST | `/api/v1/users` | Create new user | Yes | Admin |
+| GET | `/api/v1/users/{id}` | Get user by ID | Yes | Admin |
+| PUT | `/api/v1/users/{id}` | Update user | Yes | Admin |
+| DELETE | `/api/v1/users/{id}` | Delete user (soft) | Yes | Admin |
+
+### Position Management
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/positions` | Get all positions | Yes | Admin |
+| POST | `/api/v1/positions` | Create new position | Yes | Admin |
+| GET | `/api/v1/positions/{id}` | Get position by ID | Yes | Admin |
+| PUT | `/api/v1/positions/{id}` | Update position | Yes | Admin |
+| DELETE | `/api/v1/positions/{id}` | Delete position (soft) | Yes | Admin |
+
+### Module Management
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/modules` | Get all modules | Yes | Manager, Employee |
+| POST | `/api/v1/modules` | Create new module | Yes | Manager |
+| GET | `/api/v1/modules/{id}` | Get module details | Yes | Manager, Employee |
+| PUT | `/api/v1/modules/{id}` | Update module | Yes | Manager |
+| PATCH | `/api/v1/modules/{id}/status` | Update module status | Yes | Manager |
+
+### Enrollment Management
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/enrollments` | Get all enrollments | Yes | Employee |
+| POST | `/api/v1/enrollments` | Create enrollment | Yes | Employee |
+| GET | `/api/v1/enrollments/current` | Get current enrollment | Yes | Employee |
+| GET | `/api/v1/enrollments/history` | Get enrollment history | Yes | Employee |
+| POST | `/api/v1/enrollments/{id}/resume` | Resume enrollment | Yes | Employee |
+| GET | `/api/v1/enrollments/{id}/progress` | Get enrollment progress | Yes | Employee |
+| POST | `/api/v1/enrollments/{id}/items` | Mark item as completed | Yes | Employee |
+| POST | `/api/v1/enrollments/{id}/submit` | Submit final work | Yes | Employee |
+
+### Submission Management
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/submissions` | Get all submissions | Yes | Manager |
+| POST | `/api/v1/submissions/{id}/review` | Review submission | Yes | Manager |
+
+### Manager Dashboard
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/manager/dashboard` | Get dashboard summary | Yes | Manager |
+| GET | `/api/v1/manager/employees` | Get managed employees | Yes | Manager |
+| GET | `/api/v1/manager/employees/{id}/detail` | Get employee details | Yes | Manager |
+| PATCH | `/api/v1/manager/employees/{id}/status` | Update employee status | Yes | Manager |
 
 ---
 
@@ -44,7 +139,7 @@ Authorization: Bearer {jwt_token}
 **Example:**
 ```bash
 curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  https://api.levelup.local/api/v1/enrollments
+  https://localhost:7118/api/v1/enrollments
 ```
 
 ---
@@ -111,11 +206,13 @@ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
 ### Authentication
 
 #### Login
-**POST** `/auth/login`
+**POST** `/api/v1/auth/login`
 
 Authenticate user and receive JWT token.
 
 **Authorization:** None required
+
+**Full URL:** `https://localhost:7118/api/v1/auth/login`
 
 **Request Body:**
 ```json
@@ -169,11 +266,13 @@ Authenticate user and receive JWT token.
 ---
 
 #### Change Password
-**PUT** `/auth/change-password`
+**PUT** `/api/v1/auth/change-password`
 
 Change authenticated user's password.
 
 **Authorization:** Required (Bearer token)
+
+**Full URL:** `https://localhost:7118/api/v1/auth/change-password`
 
 **Request Body:**
 ```json
@@ -206,14 +305,16 @@ Change authenticated user's password.
 
 ---
 
-### User Accounts Management (Admin)
+### User Management (Admin)
 
 #### Get All Users
-**GET** `/admin/users`
+**GET** `/api/v1/users`
 
 Retrieve all user accounts with pagination and filtering.
 
 **Authorization:** Admin only
+
+**Full URL:** `https://localhost:7118/api/v1/users`
 
 **Query Parameters:**
 | Parameter | Type | Default | Required | Description |
@@ -226,7 +327,7 @@ Retrieve all user accounts with pagination and filtering.
 
 **Example Request:**
 ```
-GET /admin/users?page=1&limit=10&role=Employee&isActive=true
+GET /api/v1/users?page=1&limit=10&role=Employee&isActive=true
 ```
 
 **Response (200):**
@@ -269,11 +370,13 @@ GET /admin/users?page=1&limit=10&role=Employee&isActive=true
 ---
 
 #### Create User
-**POST** `/admin/users`
+**POST** `/api/v1/users`
 
 Create a new user account.
 
 **Authorization:** Admin only
+
+**Full URL:** `https://localhost:7118/api/v1/users`
 
 **Request Body:**
 ```json
@@ -325,11 +428,13 @@ Create a new user account.
 ---
 
 #### Update User
-**PUT** `/admin/users/{id}`
+**PUT** `/api/v1/users/{id}`
 
 Update user account details.
 
 **Authorization:** Admin only
+
+**Full URL:** `https://localhost:7118/api/v1/users/{id}`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -368,11 +473,13 @@ Update user account details.
 ---
 
 #### Delete User
-**DELETE** `/admin/users/{id}`
+**DELETE** `/api/v1/users/{id}`
 
 Soft delete user account (deactivate).
 
 **Authorization:** Admin only
+
+**Full URL:** `https://localhost:7118/api/v1/users/{id}`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -385,14 +492,16 @@ Soft delete user account (deactivate).
 
 ---
 
-### Positions Management (Admin)
+### Position Management (Admin)
 
 #### Get All Positions
-**GET** `/admin/positions`
+**GET** `/api/v1/positions`
 
 Retrieve all job positions.
 
 **Authorization:** Admin only
+
+**Full URL:** `https://localhost:7118/api/v1/positions`
 
 **Query Parameters:**
 | Parameter | Type | Default | Description |
@@ -431,11 +540,13 @@ Retrieve all job positions.
 ---
 
 #### Create Position
-**POST** `/admin/positions`
+**POST** `/api/v1/positions`
 
 Create a new job position.
 
 **Authorization:** Admin only
+
+**Full URL:** `https://localhost:7118/api/v1/positions`
 
 **Request Body:**
 ```json
@@ -462,11 +573,13 @@ Create a new job position.
 ---
 
 #### Update Position
-**PUT** `/admin/positions/{id}`
+**PUT** `/api/v1/positions/{id}`
 
 Update job position details.
 
 **Authorization:** Admin only
+
+**Full URL:** `https://localhost:7118/api/v1/positions/{id}`
 
 **Request Body:**
 ```json
@@ -490,11 +603,13 @@ Update job position details.
 ---
 
 #### Delete Position
-**DELETE** `/admin/positions/{id}`
+**DELETE** `/api/v1/positions/{id}`
 
 Deactivate a job position.
 
 **Authorization:** Admin only
+
+**Full URL:** `https://localhost:7118/api/v1/positions/{id}`
 
 **Response (204):** No content
 
@@ -503,11 +618,13 @@ Deactivate a job position.
 ### Module Management (Manager)
 
 #### Get All Modules
-**GET** `/modules`
+**GET** `/api/v1/modules`
 
 Retrieve all training modules with optional filters.
 
 **Authorization:** Manager, Employee
+
+**Full URL:** `https://localhost:7118/api/v1/modules`
 
 **Query Parameters:**
 | Parameter | Type | Default | Description |
@@ -547,11 +664,13 @@ Retrieve all training modules with optional filters.
 ---
 
 #### Get Module Details
-**GET** `/modules/{id}`
+**GET** `/api/v1/modules/{id}`
 
 Retrieve detailed information about a specific module including all items.
 
 **Authorization:** Manager, Employee
+
+**Full URL:** `https://localhost:7118/api/v1/modules/{id}`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -597,11 +716,13 @@ Retrieve detailed information about a specific module including all items.
 ---
 
 #### Create Module
-**POST** `/modules`
+**POST** `/api/v1/modules`
 
 Create a new training module with items.
 
 **Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/modules`
 
 **Request Body:**
 ```json
@@ -658,11 +779,13 @@ Create a new training module with items.
 ---
 
 #### Update Module
-**PUT** `/modules/{id}`
+**PUT** `/api/v1/modules/{id}`
 
 Update module details.
 
 **Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/modules/{id}`
 
 **Request Body:**
 ```json
@@ -690,11 +813,13 @@ Update module details.
 ---
 
 #### Update Module Status
-**PATCH** `/modules/{id}/status`
+**PATCH** `/api/v1/modules/{id}/status`
 
 Activate or deactivate a module.
 
 **Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/modules/{id}/status`
 
 **Request Body:**
 ```json
@@ -720,11 +845,13 @@ Activate or deactivate a module.
 ### Enrollment Management (Employee)
 
 #### Get All Enrollments
-**GET** `/enrollments`
+**GET** `/api/v1/enrollments`
 
 Retrieve all enrollments for the authenticated user.
 
 **Authorization:** Required (Bearer token)
+
+**Full URL:** `https://localhost:7118/api/v1/enrollments`
 
 **Query Parameters:**
 | Parameter | Type | Default | Description |
@@ -763,11 +890,13 @@ Retrieve all enrollments for the authenticated user.
 ---
 
 #### Get Current Enrollment
-**GET** `/enrollments/current`
+**GET** `/api/v1/enrollments/current`
 
 Get the employee's currently active enrollment.
 
 **Authorization:** Required (Bearer token)
+
+**Full URL:** `https://localhost:7118/api/v1/enrollments/current`
 
 **Response (200):**
 ```json
@@ -801,11 +930,13 @@ Get the employee's currently active enrollment.
 ---
 
 #### Get Enrollment History
-**GET** `/enrollments/history`
+**GET** `/api/v1/enrollments/history`
 
 Get employee's completed and paused enrollments.
 
 **Authorization:** Required (Bearer token)
+
+**Full URL:** `https://localhost:7118/api/v1/enrollments/history`
 
 **Query Parameters:**
 | Parameter | Type | Default | Description |
@@ -842,11 +973,13 @@ Get employee's completed and paused enrollments.
 ---
 
 #### Create Enrollment
-**POST** `/enrollments`
+**POST** `/api/v1/enrollments`
 
 Enroll in a module.
 
 **Authorization:** Required (Bearer token)
+
+**Full URL:** `https://localhost:7118/api/v1/enrollments`
 
 **Request Body:**
 ```json
@@ -890,11 +1023,13 @@ Enroll in a module.
 ---
 
 #### Resume Enrollment
-**POST** `/enrollments/{id}/resume`
+**POST** `/api/v1/enrollments/{id}/resume`
 
 Resume a paused enrollment.
 
 **Authorization:** Required (Bearer token)
+
+**Full URL:** `https://localhost:7118/api/v1/enrollments/{id}/resume`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -918,11 +1053,13 @@ Resume a paused enrollment.
 ### Progress & Checklist (Employee)
 
 #### Add Enrollment Item
-**POST** `/enrollments/{id}/items`
+**POST** `/api/v1/enrollments/{id}/items`
 
 Mark a module item as completed.
 
 **Authorization:** Required (Bearer token)
+
+**Full URL:** `https://localhost:7118/api/v1/enrollments/{id}/items`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -961,11 +1098,13 @@ Mark a module item as completed.
 ---
 
 #### Get Enrollment Progress
-**GET** `/enrollments/{id}/progress`
+**GET** `/api/v1/enrollments/{id}/progress`
 
 Get detailed progress for an enrollment.
 
 **Authorization:** Required (Bearer token)
+
+**Full URL:** `https://localhost:7118/api/v1/enrollments/{id}/progress`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -1009,11 +1148,13 @@ Get detailed progress for an enrollment.
 ### Final Submission & Review (Manager)
 
 #### Submit Final Work
-**POST** `/enrollments/{id}/submit`
+**POST** `/api/v1/enrollments/{id}/submit`
 
 Submit final work for an enrollment.
 
 **Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/enrollments/{id}/submit`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -1050,11 +1191,13 @@ Submit final work for an enrollment.
 ---
 
 #### Get All Submissions
-**GET** `/submissions`
+**GET** `/api/v1/submissions`
 
 Retrieve all submissions for review.
 
 **Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/submissions`
 
 **Query Parameters:**
 | Parameter | Type | Default | Description |
@@ -1093,11 +1236,13 @@ Retrieve all submissions for review.
 ---
 
 #### Review Submission
-**POST** `/submissions/{id}/review`
+**POST** `/api/v1/submissions/{id}/review`
 
 Review and approve/reject a submission.
 
 **Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/submissions/{id}/review`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -1136,11 +1281,13 @@ Review and approve/reject a submission.
 ### Manager Dashboard (Manager)
 
 #### Get Dashboard Summary
-**GET** `/manager/dashboard`
+**GET** `/api/v1/manager/dashboard`
 
 Get manager's dashboard with summary statistics.
 
 **Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/manager/dashboard`
 
 **Response (200):**
 ```json
@@ -1168,11 +1315,13 @@ Get manager's dashboard with summary statistics.
 ---
 
 #### Get Managed Employees
-**GET** `/manager/employees`
+**GET** `/api/v1/manager/employees`
 
 Get list of employees managed by this manager.
 
 **Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/manager/employees`
 
 **Query Parameters:**
 | Parameter | Type | Default | Description |
@@ -1210,11 +1359,13 @@ Get list of employees managed by this manager.
 ---
 
 #### Get Employee Details
-**GET** `/manager/employees/{id}/detail`
+**GET** `/api/v1/manager/employees/{id}/detail`
 
 Get detailed information about an employee including their enrollments and progress.
 
 **Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/manager/employees/{id}/detail`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -1253,11 +1404,13 @@ Get detailed information about an employee including their enrollments and progr
 ---
 
 #### Update Employee Status
-**PATCH** `/manager/employees/{id}/status`
+**PATCH** `/api/v1/manager/employees/{id}/status`
 
 Update employee's idle status.
 
 **Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/manager/employees/{id}/status`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -1572,7 +1725,7 @@ target_date = start_date + (module.estimated_days × 24 hours)
 
 ```bash
 # 1. Login
-curl -X POST https://api.levelup.local/api/v1/auth/login \
+curl -X POST https://localhost:7118/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -1583,7 +1736,7 @@ curl -X POST https://api.levelup.local/api/v1/auth/login \
 # Use token in subsequent requests
 
 # 2. Get enrollments
-curl -X GET https://api.levelup.local/api/v1/enrollments \
+curl -X GET https://localhost:7118/api/v1/enrollments \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 
@@ -1591,21 +1744,21 @@ curl -X GET https://api.levelup.local/api/v1/enrollments \
 
 ```bash
 # 1. Get available modules
-curl -X GET https://api.levelup.local/api/v1/modules \
+curl -X GET https://localhost:7118/api/v1/modules \
   -H "Authorization: Bearer {token}"
 
 # 2. Create enrollment
-curl -X POST https://api.levelup.local/api/v1/enrollments \
+curl -X POST https://localhost:7118/api/v1/enrollments \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{"moduleId": "770e8400-e29b-41d4-a716-446655440000"}'
 
 # 3. Get progress
-curl -X GET https://api.levelup.local/api/v1/enrollments/{id}/progress \
+curl -X GET https://localhost:7118/api/v1/enrollments/{id}/progress \
   -H "Authorization: Bearer {token}"
 
 # 4. Mark item complete
-curl -X POST https://api.levelup.local/api/v1/enrollments/{id}/items \
+curl -X POST https://localhost:7118/api/v1/enrollments/{id}/items \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1616,6 +1769,8 @@ curl -X POST https://api.levelup.local/api/v1/enrollments/{id}/items \
 
 ---
 
-**Last Updated**: December 9, 2025  
+**Last Updated**: December 12, 2025  
 **API Version**: v1  
-**Base URL**: `https://api.levelup.local/api/v1`
+**Development Base URL**: `https://localhost:7118`  
+**Production Base URL**: `https://api.levelup.local`  
+**Endpoint Format**: `{base_url}/api/v1/{resource}`

@@ -45,4 +45,9 @@ public class Repository<Repo> : IRepository<Repo> where Repo : class
     {
         return await _context.Set<Repo>().FirstOrDefaultAsync(predicate);
     }
+
+    public IQueryable<Repo> GetQueryable()
+    {
+        return _context.Set<Repo>().AsQueryable();
+    }
 }
