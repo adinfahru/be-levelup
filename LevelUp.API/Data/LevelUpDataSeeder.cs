@@ -68,7 +68,48 @@ namespace LevelUp.API.Data
                 CreatedAt = DateTime.UtcNow,
             };
 
-            await context.Accounts.AddRangeAsync(adminAccount, managerAccount, employeeAccount);
+            var employee2Account = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = "employee2@levelup.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
+                Role = UserRole.Employee,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employee3Account = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = "employee3@levelup.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
+                Role = UserRole.Employee,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employee4Account = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = "employee4@levelup.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
+                Role = UserRole.Employee,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employee5Account = new Account
+            {
+                Id = Guid.NewGuid(),
+                Email = "employee5@levelup.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
+                Role = UserRole.Employee,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            await context.Accounts.AddRangeAsync(adminAccount, managerAccount, employeeAccount,
+                employee2Account, employee3Account, employee4Account, employee5Account);
             await context.SaveChangesAsync();
 
             // Seed Employees
@@ -105,7 +146,52 @@ namespace LevelUp.API.Data
                 CreatedAt = DateTime.UtcNow,
             };
 
-            await context.Employees.AddRangeAsync(adminEmployee, managerEmployee, employeeEmployee);
+            var employee2 = new Employee
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employee2Account.Id,
+                FirstName = "Jessica",
+                LastName = "Martinez",
+                PositionId = positions[0].Id,
+                IsIdle = false,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employee3 = new Employee
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employee3Account.Id,
+                FirstName = "Christopher",
+                LastName = "Taylor",
+                PositionId = positions[1].Id,
+                IsIdle = false,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employee4 = new Employee
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employee4Account.Id,
+                FirstName = "Amanda",
+                LastName = "Davis",
+                PositionId = positions[0].Id,
+                IsIdle = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var employee5 = new Employee
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employee5Account.Id,
+                FirstName = "Daniel",
+                LastName = "Thompson",
+                PositionId = positions[2].Id,
+                IsIdle = false,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            await context.Employees.AddRangeAsync(adminEmployee, managerEmployee, employeeEmployee,
+                employee2, employee3, employee4, employee5);
             await context.SaveChangesAsync();
 
             // Seed Modules
@@ -327,17 +413,62 @@ namespace LevelUp.API.Data
                 },
             };
 
-            // Module 5 has no items (empty module for testing)
+            // Seed Module Items for Module 5 (React)
+            var module5Items = new List<ModuleItem>
+            {
+                new ModuleItem
+                {
+                    Id = Guid.NewGuid(),
+                    ModuleId = module5.Id,
+                    Title = "React Setup and JSX",
+                    OrderIndex = 1,
+                    Descriptions = "Getting started with React",
+                    Url = "https://react.dev",
+                    IsFinalSubmission = false,
+                },
+                new ModuleItem
+                {
+                    Id = Guid.NewGuid(),
+                    ModuleId = module5.Id,
+                    Title = "State and Props",
+                    OrderIndex = 2,
+                    Descriptions = "Component state management",
+                    Url = "https://react.dev/learn",
+                    IsFinalSubmission = false,
+                },
+                new ModuleItem
+                {
+                    Id = Guid.NewGuid(),
+                    ModuleId = module5.Id,
+                    Title = "Hooks Deep Dive",
+                    OrderIndex = 3,
+                    Descriptions = "Master React hooks",
+                    Url = "https://react.dev/reference",
+                    IsFinalSubmission = false,
+                },
+                new ModuleItem
+                {
+                    Id = Guid.NewGuid(),
+                    ModuleId = module5.Id,
+                    Title = "Final React Application",
+                    OrderIndex = 4,
+                    Descriptions = "Build complete React app",
+                    Url = "https://github.com",
+                    IsFinalSubmission = true,
+                },
+            };
 
             await context.ModuleItems.AddRangeAsync(module1Items);
             await context.ModuleItems.AddRangeAsync(module2Items);
             await context.ModuleItems.AddRangeAsync(module3Items);
             await context.ModuleItems.AddRangeAsync(module4Items);
+            await context.ModuleItems.AddRangeAsync(module5Items);
             await context.SaveChangesAsync();
 
             var moduleItems = module1Items; // Keep reference for enrollment seeding
 
-            // Seed Enrollment
+            // Seed Enrollments with diverse statuses
+            // Employee 1 (John) - OnGoing in Module 1
             var enrollment = new Enrollment
             {
                 Id = Guid.NewGuid(),
@@ -349,37 +480,390 @@ namespace LevelUp.API.Data
                 CurrentProgress = 33,
                 CreatedAt = DateTime.UtcNow,
             };
-            await context.Enrollments.AddAsync(enrollment);
+
+            // Employee 2 (Jessica) - Completed Module 2
+            var enrollment2 = new Enrollment
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employee2Account.Id,
+                ModuleId = module2.Id,
+                StartDate = DateTime.UtcNow.AddDays(-20),
+                TargetDate = DateTime.UtcNow.AddDays(-6),
+                Status = EnrollmentStatus.Completed,
+                CurrentProgress = 100,
+                CreatedAt = DateTime.UtcNow.AddDays(-20),
+                CompletedDate = DateTime.UtcNow.AddDays(-5),
+            };
+
+            // Employee 2 (Jessica) - OnGoing in Module 4
+            var enrollment3 = new Enrollment
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employee2Account.Id,
+                ModuleId = module4.Id,
+                StartDate = DateTime.UtcNow.AddDays(-5),
+                TargetDate = DateTime.UtcNow.AddDays(5),
+                Status = EnrollmentStatus.OnGoing,
+                CurrentProgress = 66,
+                CreatedAt = DateTime.UtcNow.AddDays(-5),
+            };
+
+            // Employee 3 (Christopher) - Paused in Module 5
+            var enrollment4 = new Enrollment
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employee3Account.Id,
+                ModuleId = module5.Id,
+                StartDate = DateTime.UtcNow.AddDays(-10),
+                TargetDate = DateTime.UtcNow.AddDays(2),
+                Status = EnrollmentStatus.Paused,
+                CurrentProgress = 50,
+                CreatedAt = DateTime.UtcNow.AddDays(-10),
+            };
+
+            // Employee 3 (Christopher) - Completed Module 1
+            var enrollment5 = new Enrollment
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employee3Account.Id,
+                ModuleId = module1.Id,
+                StartDate = DateTime.UtcNow.AddDays(-15),
+                TargetDate = DateTime.UtcNow.AddDays(-8),
+                Status = EnrollmentStatus.Completed,
+                CurrentProgress = 100,
+                CreatedAt = DateTime.UtcNow.AddDays(-15),
+                CompletedDate = DateTime.UtcNow.AddDays(-7),
+            };
+
+            // Employee 5 (Daniel) - OnGoing in Module 2
+            var enrollment6 = new Enrollment
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employee5Account.Id,
+                ModuleId = module2.Id,
+                StartDate = DateTime.UtcNow.AddDays(-8),
+                TargetDate = DateTime.UtcNow.AddDays(6),
+                Status = EnrollmentStatus.OnGoing,
+                CurrentProgress = 20,
+                CreatedAt = DateTime.UtcNow.AddDays(-8),
+            };
+
+            // Employee 4 (Amanda) - Completed Module 5
+            var enrollment7 = new Enrollment
+            {
+                Id = Guid.NewGuid(),
+                AccountId = employee4Account.Id,
+                ModuleId = module5.Id,
+                StartDate = DateTime.UtcNow.AddDays(-18),
+                TargetDate = DateTime.UtcNow.AddDays(-6),
+                Status = EnrollmentStatus.Completed,
+                CurrentProgress = 100,
+                CreatedAt = DateTime.UtcNow.AddDays(-18),
+                CompletedDate = DateTime.UtcNow.AddDays(-5),
+            };
+
+            await context.Enrollments.AddRangeAsync(enrollment, enrollment2, enrollment3,
+                enrollment4, enrollment5, enrollment6, enrollment7);
             await context.SaveChangesAsync();
 
-            // Seed Enrollment Items
-            var enrollmentItems = new List<EnrollmentItem>
+            // Seed Enrollment Items for all enrollments
+            // Enrollment 1 items (1/3 completed)
+            var enrollment1Items = new List<EnrollmentItem>
             {
                 new EnrollmentItem
                 {
                     Id = Guid.NewGuid(),
                     EnrollmentId = enrollment.Id,
-                    ModuleItemId = moduleItems[0].Id,
+                    ModuleItemId = module1Items[0].Id,
                     IsCompleted = true,
-                    EvidenceUrl = "https://github.com/user/repo/commit/123",
+                    EvidenceUrl = "https://github.com/johndoe/aspnet-setup",
                     CompletedAt = DateTime.UtcNow.AddDays(-2),
                 },
                 new EnrollmentItem
                 {
                     Id = Guid.NewGuid(),
                     EnrollmentId = enrollment.Id,
-                    ModuleItemId = moduleItems[1].Id,
+                    ModuleItemId = module1Items[1].Id,
                     IsCompleted = false,
                 },
                 new EnrollmentItem
                 {
                     Id = Guid.NewGuid(),
                     EnrollmentId = enrollment.Id,
-                    ModuleItemId = moduleItems[2].Id,
+                    ModuleItemId = module1Items[2].Id,
                     IsCompleted = false,
                 },
             };
-            await context.EnrollmentItems.AddRangeAsync(enrollmentItems);
+
+            // Enrollment 2 items (All completed)
+            var enrollment2Items = new List<EnrollmentItem>
+            {
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment2.Id,
+                    ModuleItemId = module2Items[0].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/jessica/async-project",
+                    CompletedAt = DateTime.UtcNow.AddDays(-15),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment2.Id,
+                    ModuleItemId = module2Items[1].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/jessica/linq-exercises",
+                    CompletedAt = DateTime.UtcNow.AddDays(-12),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment2.Id,
+                    ModuleItemId = module2Items[2].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/jessica/delegates-demo",
+                    CompletedAt = DateTime.UtcNow.AddDays(-10),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment2.Id,
+                    ModuleItemId = module2Items[3].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/jessica/generics-project",
+                    CompletedAt = DateTime.UtcNow.AddDays(-7),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment2.Id,
+                    ModuleItemId = module2Items[4].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/jessica/final-csharp",
+                    CompletedAt = DateTime.UtcNow.AddDays(-5),
+                },
+            };
+
+            // Enrollment 3 items (2/3 completed)
+            var enrollment3Items = new List<EnrollmentItem>
+            {
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment3.Id,
+                    ModuleItemId = module4Items[0].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/jessica/ef-basics",
+                    CompletedAt = DateTime.UtcNow.AddDays(-3),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment3.Id,
+                    ModuleItemId = module4Items[1].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/jessica/ef-migrations",
+                    CompletedAt = DateTime.UtcNow.AddDays(-1),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment3.Id,
+                    ModuleItemId = module4Items[2].Id,
+                    IsCompleted = false,
+                },
+            };
+
+            // Enrollment 4 items (2/4 completed - Paused)
+            var enrollment4Items = new List<EnrollmentItem>
+            {
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment4.Id,
+                    ModuleItemId = module5Items[0].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/christopher/react-setup",
+                    CompletedAt = DateTime.UtcNow.AddDays(-8),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment4.Id,
+                    ModuleItemId = module5Items[1].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/christopher/react-state",
+                    CompletedAt = DateTime.UtcNow.AddDays(-6),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment4.Id,
+                    ModuleItemId = module5Items[2].Id,
+                    IsCompleted = false,
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment4.Id,
+                    ModuleItemId = module5Items[3].Id,
+                    IsCompleted = false,
+                },
+            };
+
+            // Enrollment 5 items (All completed)
+            var enrollment5Items = new List<EnrollmentItem>
+            {
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment5.Id,
+                    ModuleItemId = module1Items[0].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/christopher/aspnet-env",
+                    CompletedAt = DateTime.UtcNow.AddDays(-13),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment5.Id,
+                    ModuleItemId = module1Items[1].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/christopher/first-api",
+                    CompletedAt = DateTime.UtcNow.AddDays(-10),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment5.Id,
+                    ModuleItemId = module1Items[2].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/christopher/aspnet-final",
+                    CompletedAt = DateTime.UtcNow.AddDays(-7),
+                },
+            };
+
+            // Enrollment 6 items (1/5 completed)
+            var enrollment6Items = new List<EnrollmentItem>
+            {
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment6.Id,
+                    ModuleItemId = module2Items[0].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/daniel/async-basics",
+                    CompletedAt = DateTime.UtcNow.AddDays(-6),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment6.Id,
+                    ModuleItemId = module2Items[1].Id,
+                    IsCompleted = false,
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment6.Id,
+                    ModuleItemId = module2Items[2].Id,
+                    IsCompleted = false,
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment6.Id,
+                    ModuleItemId = module2Items[3].Id,
+                    IsCompleted = false,
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment6.Id,
+                    ModuleItemId = module2Items[4].Id,
+                    IsCompleted = false,
+                },
+            };
+
+            // Enrollment 7 items (All completed - Amanda)
+            var enrollment7Items = new List<EnrollmentItem>
+            {
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment7.Id,
+                    ModuleItemId = module5Items[0].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/amanda/react-setup",
+                    CompletedAt = DateTime.UtcNow.AddDays(-16),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment7.Id,
+                    ModuleItemId = module5Items[1].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/amanda/react-state-props",
+                    CompletedAt = DateTime.UtcNow.AddDays(-13),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment7.Id,
+                    ModuleItemId = module5Items[2].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/amanda/react-hooks",
+                    CompletedAt = DateTime.UtcNow.AddDays(-9),
+                },
+                new EnrollmentItem
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment7.Id,
+                    ModuleItemId = module5Items[3].Id,
+                    IsCompleted = true,
+                    EvidenceUrl = "https://github.com/amanda/react-final-app",
+                    CompletedAt = DateTime.UtcNow.AddDays(-5),
+                },
+            };
+
+            await context.EnrollmentItems.AddRangeAsync(enrollment1Items);
+            await context.EnrollmentItems.AddRangeAsync(enrollment2Items);
+            await context.EnrollmentItems.AddRangeAsync(enrollment3Items);
+            await context.EnrollmentItems.AddRangeAsync(enrollment4Items);
+            await context.EnrollmentItems.AddRangeAsync(enrollment5Items);
+            await context.EnrollmentItems.AddRangeAsync(enrollment6Items);
+            await context.EnrollmentItems.AddRangeAsync(enrollment7Items);
+            await context.SaveChangesAsync();
+
+            // Seed Submissions for completed enrollments
+            var submission1 = new Submission
+            {
+                Id = Guid.NewGuid(),
+                EnrollmentId = enrollment2.Id,
+                Status = SubmissionStatus.Approved,
+                CreatedAt = DateTime.UtcNow.AddDays(-5),
+                UpdatedAt = DateTime.UtcNow.AddDays(-4),
+            };
+
+            var submission2 = new Submission
+            {
+                Id = Guid.NewGuid(),
+                EnrollmentId = enrollment5.Id,
+                Status = SubmissionStatus.Pending,
+                CreatedAt = DateTime.UtcNow.AddDays(-7),
+            };
+
+            var submission3 = new Submission
+            {
+                Id = Guid.NewGuid(),
+                EnrollmentId = enrollment7.Id,
+                Status = SubmissionStatus.Approved,
+                CreatedAt = DateTime.UtcNow.AddDays(-6),
+                UpdatedAt = DateTime.UtcNow.AddDays(-5),
+            };
+
+            await context.Submissions.AddRangeAsync(submission1, submission2, submission3);
             await context.SaveChangesAsync();
         }
     }
