@@ -95,16 +95,23 @@ https://localhost:7118/api/v1/enrollments
 | PATCH | `/api/v1/modules/{id}/status` | Update module status | Yes | Manager |
 
 ### Enrollment Management
+**📖 Detailed Documentation:** [ENROLLMENT_API.md](./ENROLLMENT_API.md)
+
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
-| GET | `/api/v1/enrollments` | Get all enrollments | Yes | Employee |
-| POST | `/api/v1/enrollments` | Create enrollment | Yes | Employee |
-| GET | `/api/v1/enrollments/current` | Get current enrollment | Yes | Employee |
+| GET | `/api/v1/enrollments/current` | Get current active enrollment | Yes | Employee |
 | GET | `/api/v1/enrollments/history` | Get enrollment history | Yes | Employee |
-| POST | `/api/v1/enrollments/{id}/resume` | Resume enrollment | Yes | Employee |
+| POST | `/api/v1/enrollments` | Create new enrollment | Yes | Employee |
+| POST | `/api/v1/enrollments/{id}/items` | Submit checklist item | Yes | Employee |
 | GET | `/api/v1/enrollments/{id}/progress` | Get enrollment progress | Yes | Employee |
-| POST | `/api/v1/enrollments/{id}/items` | Mark item as completed | Yes | Employee |
-| POST | `/api/v1/enrollments/{id}/submit` | Submit final work | Yes | Employee |
+| POST | `/api/v1/enrollments/{id}/resume` | Resume paused enrollment | Yes | Employee |
+
+**Key Features:**
+- Single active enrollment policy (one module at a time)
+- Automatic progress tracking and calculation
+- Auto-pause when enrolling in new module
+- Auto-complete when all items submitted
+- Comprehensive history tracking
 
 ### Submission Management
 | Method | Endpoint | Description | Auth Required | Role |
@@ -648,7 +655,9 @@ Retrieve all training modules with optional filters.
         "isActive": true,
         "createdBy": "550e8400-e29b-41d4-a716-446655440000",
         "createdAt": "2025-12-01T08:00:00Z",
-        "itemCount": 5
+        "itemCount": 5,
+        "enrolledCount": 12,
+        "activeCount": 3
       }
     ],
     "pagination": {
@@ -844,129 +853,98 @@ Activate or deactivate a module.
 
 ### Enrollment Management (Employee)
 
-#### Get All Enrollments
-**GET** `/api/v1/enrollments`
+> **📖 Complete Documentation:** For comprehensive enrollment API documentation including all business rules, data models, test scenarios, and error codes, see [ENROLLMENT_API.md](./ENROLLMENT_API.md)
 
-Retrieve all enrollments for the authenticated user.
+#### Overview
 
-**Authorization:** Required (Bearer token)
+The Enrollment API enables employees to manage their learning journey through training modules.
 
-**Full URL:** `https://localhost:7118/api/v1/enrollments`
+**Key Features:**
+- **Single Active Enrollment**: One module at a time policy
+- **Automatic Progress Tracking**: Progress = (completed items / total items) × 100
+- **Auto-Pause Mechanism**: New enrollment pauses the previous one
+- **Auto-Complete**: Enrollment completes when all items submitted
+- **Status Lifecycle**: OnGoing → Paused → Completed
 
-**Query Parameters:**
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | integer | 1 | Page number |
-| limit | integer | 10 | Items per page |
-| status | string | - | Filter by status (OnGoing, Paused, Completed) |
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "items": [
-      {
-        "id": "990e8400-e29b-41d4-a716-446655440000",
-        "moduleId": "770e8400-e29b-41d4-a716-446655440000",
-        "moduleName": "Advanced C# Programming",
-        "startDate": "2025-12-01T08:00:00Z",
-        "targetDate": "2025-12-15T08:00:00Z",
-        "completedDate": null,
-        "status": "OnGoing",
-        "currentProgress": 35.5
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 3,
-      "totalPages": 1
-    }
-  }
-}
-```
+**Enrollment Statuses:**
+- `OnGoing`: Active, employee working on module
+- `Paused`: Temporarily suspended (can resume)
+- `Completed`: All items finished (cannot resume)
 
 ---
 
 #### Get Current Enrollment
 **GET** `/api/v1/enrollments/current`
 
-Get the employee's currently active enrollment.
+Get employee's active (OnGoing) enrollment.
 
-**Authorization:** Required (Bearer token)
+**Authorization:** Employee only
 
-**Full URL:** `https://localhost:7118/api/v1/enrollments/current`
+**Full URL:** `http://localhost:5067/api/v1/enrollments/current`
 
-**Response (200):**
+**Response (200 OK):**
 ```json
 {
   "success": true,
   "data": {
-    "id": "990e8400-e29b-41d4-a716-446655440000",
-    "moduleId": "770e8400-e29b-41d4-a716-446655440000",
-    "moduleName": "Advanced C# Programming",
-    "startDate": "2025-12-01T08:00:00Z",
-    "targetDate": "2025-12-15T08:00:00Z",
+    "enrollmentId": "60000000-0000-0000-0000-000000000001",
+    "moduleId": "40000000-0000-0000-0000-000000000001",
+    "moduleTitle": "ASP.NET Core Fundamentals",
+    "moduleDescription": "Learn the basics of building web APIs",
+    "startDate": "2024-01-15T08:00:00Z",
+    "targetDate": "2024-02-15T08:00:00Z",
+    "completedDate": null,
     "status": "OnGoing",
-    "currentProgress": 35.5
+    "currentProgress": 33,
+    "sections": [
+      {
+        "enrollmentItemId": "70000000-0000-0000-0000-000000000001",
+        "moduleItemId": "50000000-0000-0000-0000-000000000001",
+        "orderIndex": 1,
+        "moduleItemTitle": "Setup Development Environment",
+        "moduleItemDescription": "Install VS Code, .NET SDK, and configure workspace",
+        "moduleItemUrl": "https://learn.microsoft.com/dotnet/core/install/",
+        "isFinalSubmission": false,
+        "isCompleted": true,
+        "evidenceUrl": "https://github.com/johndoe/setup-proof",
+        "completedAt": "2024-01-16T10:30:00Z"
+      }
+    ]
   }
 }
 ```
 
-**Error Response:**
-
-```json
-// 404 - No active enrollment
-{
-  "success": false,
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "No active enrollment found"
-  }
-}
-```
+**Response (204 No Content):** When employee has no active enrollment.
 
 ---
 
 #### Get Enrollment History
 **GET** `/api/v1/enrollments/history`
 
-Get employee's completed and paused enrollments.
+Get all past enrollments (Completed & Paused).
 
-**Authorization:** Required (Bearer token)
+**Authorization:** Employee only
 
-**Full URL:** `https://localhost:7118/api/v1/enrollments/history`
+**Full URL:** `http://localhost:5067/api/v1/enrollments/history`
 
-**Query Parameters:**
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | integer | 1 | Page number |
-| limit | integer | 10 | Items per page |
-
-**Response (200):**
+**Response (200 OK):**
 ```json
 {
   "success": true,
-  "data": {
-    "items": [
-      {
-        "id": "990e8400-e29b-41d4-a716-446655440001",
-        "moduleId": "770e8400-e29b-41d4-a716-446655440000",
-        "moduleName": "Basic Python",
-        "startDate": "2025-11-01T08:00:00Z",
-        "completedDate": "2025-11-20T15:30:00Z",
-        "status": "Completed",
-        "currentProgress": 100
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 2,
-      "totalPages": 1
+  "data": [
+    {
+      "enrollmentId": "60000000-0000-0000-0000-000000000002",
+      "moduleId": "40000000-0000-0000-0000-000000000002",
+      "moduleTitle": "Advanced C# Programming",
+      "moduleDescription": "Master async/await, LINQ, delegates",
+      "startDate": "2023-11-01T08:00:00Z",
+      "targetDate": "2023-12-15T08:00:00Z",
+      "completedDate": "2023-12-10T14:20:00Z",
+      "status": "Completed",
+      "currentProgress": 100,
+      "sections": []
     }
-  }
+  ]
 }
 ```
 
@@ -975,47 +953,138 @@ Get employee's completed and paused enrollments.
 #### Create Enrollment
 **POST** `/api/v1/enrollments`
 
-Enroll in a module.
+Enroll in a training module.
 
-**Authorization:** Required (Bearer token)
+**Authorization:** Employee only
 
-**Full URL:** `https://localhost:7118/api/v1/enrollments`
+**Full URL:** `http://localhost:5067/api/v1/enrollments`
 
 **Request Body:**
 ```json
 {
-  "moduleId": "770e8400-e29b-41d4-a716-446655440000"
+  "moduleId": "40000000-0000-0000-0000-000000000001"
 }
 ```
 
-**Field Validation:**
-- `moduleId`: Required, must be valid module ID and active
-
-**Response (201):**
+**Response (201 Created):**
 ```json
 {
   "success": true,
   "data": {
-    "id": "990e8400-e29b-41d4-a716-446655440002",
-    "moduleId": "770e8400-e29b-41d4-a716-446655440000",
-    "startDate": "2025-12-09T10:30:00Z",
-    "targetDate": "2025-12-23T10:30:00Z",
+    "enrollmentId": "60000000-0000-0000-0000-000000000008",
+    "moduleId": "40000000-0000-0000-0000-000000000001",
+    "moduleTitle": "ASP.NET Core Fundamentals",
+    "startDate": "2024-12-16T10:30:00Z",
+    "targetDate": "2025-01-16T10:30:00Z",
     "status": "OnGoing",
-    "currentProgress": 0
+    "currentProgress": 0,
+    "sections": []
   },
-  "message": "Enrollment created successfully"
+  "message": "Successfully enrolled in module"
 }
 ```
 
-**Error Response:**
+**Business Logic:**
+- If employee has OnGoing enrollment → auto-paused
+- Target date = Start date + Module's `estimatedDays`
 
+**Error Responses:**
 ```json
-// 400 - Already enrolled
+// 400 - Already has active enrollment
+{ "success": false, "error": { "code": "ENROLLMENT_ALREADY_EXISTS" } }
+
+// 400 - Inactive module
+{ "success": false, "error": { "code": "CANNOT_ENROLL_INACTIVE_MODULE" } }
+```
+
+---
+
+#### Submit Checklist Item
+**POST** `/api/v1/enrollments/{enrollmentId}/items`
+
+Mark module item as completed with evidence.
+
+**Authorization:** Employee only
+
+**Full URL:** `http://localhost:5067/api/v1/enrollments/{enrollmentId}/items`
+
+**Request Body:**
+```json
 {
-  "success": false,
-  "error": {
-    "code": "INVALID_INPUT",
-    "message": "Already enrolled in this module"
+  "moduleItemId": "50000000-0000-0000-0000-000000000002",
+  "evidenceUrl": "https://github.com/johndoe/first-api-project",
+  "feedback": "Successfully created REST API with authentication"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "enrollmentId": "60000000-0000-0000-0000-000000000001",
+    "currentProgress": 66,
+    "status": "OnGoing",
+    "sections": []
+  },
+  "message": "Checklist item submitted successfully"
+}
+```
+
+**Auto-Complete:** When last item submitted → Status: Completed, Progress: 100%
+
+**Error Responses:**
+```json
+// 400 - Item already completed
+{ "success": false, "error": { "code": "ITEM_ALREADY_COMPLETED" } }
+
+// 400 - Item not in module
+{ "success": false, "error": { "code": "ITEM_NOT_IN_MODULE" } }
+
+// 403 - Wrong employee
+{ "success": false, "error": { "code": "FORBIDDEN" } }
+```
+
+---
+
+#### Get Enrollment Progress
+**GET** `/api/v1/enrollments/{enrollmentId}/progress`
+
+Get detailed progress with all checklist items.
+
+**Authorization:** Employee only
+
+**Full URL:** `http://localhost:5067/api/v1/enrollments/{enrollmentId}/progress`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "enrollmentId": "60000000-0000-0000-0000-000000000001",
+    "moduleTitle": "ASP.NET Core Fundamentals",
+    "currentProgress": 66,
+    "status": "OnGoing",
+    "sections": [
+      {
+        "enrollmentItemId": "70000000-0000-0000-0000-000000000001",
+        "moduleItemId": "50000000-0000-0000-0000-000000000001",
+        "orderIndex": 1,
+        "moduleItemTitle": "Setup Development Environment",
+        "isCompleted": true,
+        "evidenceUrl": "https://github.com/johndoe/setup-proof",
+        "completedAt": "2024-01-16T10:30:00Z"
+      },
+      {
+        "enrollmentItemId": "70000000-0000-0000-0000-000000000002",
+        "moduleItemId": "50000000-0000-0000-0000-000000000002",
+        "orderIndex": 2,
+        "moduleItemTitle": "Create First Web API",
+        "isCompleted": false,
+        "evidenceUrl": null,
+        "completedAt": null
+      }
+    ]
   }
 }
 ```
@@ -1023,124 +1092,38 @@ Enroll in a module.
 ---
 
 #### Resume Enrollment
-**POST** `/api/v1/enrollments/{id}/resume`
+**POST** `/api/v1/enrollments/{enrollmentId}/resume`
 
 Resume a paused enrollment.
 
-**Authorization:** Required (Bearer token)
+**Authorization:** Employee only
 
-**Full URL:** `https://localhost:7118/api/v1/enrollments/{id}/resume`
+**Full URL:** `http://localhost:5067/api/v1/enrollments/{enrollmentId}/resume`
 
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | uuid | Enrollment ID |
-
-**Response (200):**
+**Response (200 OK):**
 ```json
 {
   "success": true,
   "data": {
-    "id": "990e8400-e29b-41d4-a716-446655440000",
-    "status": "OnGoing"
+    "enrollmentId": "60000000-0000-0000-0000-000000000004",
+    "status": "OnGoing",
+    "currentProgress": 50
   },
   "message": "Enrollment resumed successfully"
 }
 ```
 
----
+**Business Logic:**
+- Status: Paused → OnGoing
+- If another OnGoing enrollment exists → auto-paused
 
-### Progress & Checklist (Employee)
-
-#### Add Enrollment Item
-**POST** `/api/v1/enrollments/{id}/items`
-
-Mark a module item as completed.
-
-**Authorization:** Required (Bearer token)
-
-**Full URL:** `https://localhost:7118/api/v1/enrollments/{id}/items`
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | uuid | Enrollment ID |
-
-**Request Body:**
+**Error Responses:**
 ```json
-{
-  "moduleItemId": "880e8400-e29b-41d4-a716-446655440000",
-  "feedback": "Successfully completed the async programming exercise",
-  "evidenceUrl": "https://github.com/user/async-project"
-}
-```
+// 400 - Not paused
+{ "success": false, "error": { "code": "ENROLLMENT_NOT_PAUSED" } }
 
-**Field Validation:**
-- `moduleItemId`: Required, must be valid item ID
-- `feedback`: Optional, maximum 1000 characters
-- `evidenceUrl`: Optional, must be valid URL format
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "aa0e8400-e29b-41d4-a716-446655440000",
-    "enrollmentId": "990e8400-e29b-41d4-a716-446655440000",
-    "moduleItemId": "880e8400-e29b-41d4-a716-446655440000",
-    "isCompleted": true,
-    "completedAt": "2025-12-09T10:30:00Z"
-  },
-  "message": "Item marked as completed"
-}
-```
-
----
-
-#### Get Enrollment Progress
-**GET** `/api/v1/enrollments/{id}/progress`
-
-Get detailed progress for an enrollment.
-
-**Authorization:** Required (Bearer token)
-
-**Full URL:** `https://localhost:7118/api/v1/enrollments/{id}/progress`
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | uuid | Enrollment ID |
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "enrollmentId": "990e8400-e29b-41d4-a716-446655440000",
-    "moduleName": "Advanced C# Programming",
-    "currentProgress": 60,
-    "totalItems": 5,
-    "completedItems": 3,
-    "items": [
-      {
-        "id": "880e8400-e29b-41d4-a716-446655440000",
-        "title": "Async/Await Deep Dive",
-        "orderIndex": 1,
-        "isCompleted": true,
-        "isFinalSubmission": false,
-        "completedAt": "2025-12-05T14:00:00Z"
-      },
-      {
-        "id": "880e8400-e29b-41d4-a716-446655440001",
-        "title": "Final Project",
-        "orderIndex": 5,
-        "isCompleted": false,
-        "isFinalSubmission": true,
-        "completedAt": null
-      }
-    ]
-  }
-}
+// 400 - Already completed
+{ "success": false, "error": { "code": "CANNOT_RESUME_COMPLETED" } }
 ```
 
 ---
