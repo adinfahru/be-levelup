@@ -38,6 +38,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPositionService, PositionService>();
 builder.Services.AddScoped<IModuleService, ModuleService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 //Global Exception
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
