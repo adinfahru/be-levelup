@@ -151,7 +151,8 @@ public class EnrollmentService : IEnrollmentService
                 "Checklist must be completed in order");
 
         // 7. Final submission wajib evidence
-        if (nextItem.ModuleItem.IsFinalSubmission &&
+        if (nextItem.ModuleItem != null &&
+            nextItem.ModuleItem.IsFinalSubmission &&
             string.IsNullOrWhiteSpace(request.EvidenceUrl))
         {
             throw new InvalidOperationException(
@@ -174,7 +175,8 @@ public class EnrollmentService : IEnrollmentService
         // 10. Penentuan status enrollment
         if (completedCount == totalCount)
         {
-            if (!nextItem.ModuleItem.IsFinalSubmission)
+            if (nextItem.ModuleItem != null &&
+                !nextItem.ModuleItem.IsFinalSubmission)
             {
                 enrollment.Status = EnrollmentStatus.Completed;
                 enrollment.CompletedDate = DateTime.UtcNow;
