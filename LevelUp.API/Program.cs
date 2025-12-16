@@ -37,6 +37,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPositionService, PositionService>();
 builder.Services.AddScoped<IModuleService, ModuleService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 
 
 //Global Exception

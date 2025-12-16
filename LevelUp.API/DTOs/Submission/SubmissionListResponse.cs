@@ -1,23 +1,19 @@
-namespace LevelUp.API.DTOs.Submissions;
+using LevelUp.API.Entity;
 
 public record SubmissionListResponse(
     Guid SubmissionId,
     Guid EnrollmentId,
 
-    // Employee
     Guid EmployeeId,
     string EmployeeName,
-    string EmployeeEmail,
+    string Email,
 
-    // Module
     Guid ModuleId,
     string ModuleTitle,
 
-    // Progress
-    int CompletedSection,
-    int TotalSection,
+    int CompletedCount,
+    int TotalCount,
 
-    // Submission
-    string Status,
+    SubmissionStatus Status,
     DateTime SubmittedAt
 );

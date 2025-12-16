@@ -1,7 +1,7 @@
-namespace LevelUp.API.DTOs.Submissions;
+using LevelUp.API.Entity;
 
-public record SubmissionReviewRequest(
-    string Status,              // Approved | Rejected
-    string? ManagerFeedback,    // wajib kalau Rejected
-    int? TargetDays             // jumlah hari untuk revisi
-);
+public class SubmissionReviewRequest
+{
+    public SubmissionStatus Status { get; set; }
+    public string? ManagerFeedback { get; set; }
+}

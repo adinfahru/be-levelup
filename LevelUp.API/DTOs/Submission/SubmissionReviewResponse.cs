@@ -1,8 +1,8 @@
-namespace LevelUp.API.DTOs.Submissions;
+using LevelUp.API.Entity;
 
 public record SubmissionReviewResponse(
     Guid SubmissionId,
-    string Status,
+    SubmissionStatus Status,
     string? ManagerFeedback,
     DateTime ReviewedAt
 );
