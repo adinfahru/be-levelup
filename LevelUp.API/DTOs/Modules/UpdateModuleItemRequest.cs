@@ -2,20 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LevelUp.API.DTOs.Modules;
 
-public record CreateModuleRequest(
-    string Title,
-    string? Description,
-    int EstimatedDays,
-    List<CreateModuleItemRequest>? Items
-);
-
-public record CreateModuleItemRequest(
+public record UpdateModuleItemRequest(
     [Required]
     [StringLength(200, MinimumLength = 3)]
     string Title,
-
-    [Required]
-    int OrderIndex,
 
     [StringLength(1000)]
     string? Descriptions,
