@@ -11,6 +11,11 @@ public class ModuleRepository : Repository<Module>, IModuleRepository
     {
     }
 
+    public async Task<Module?> GetByIdWithItemsAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _context.Modules
+            .Include(m => m.Items)
+            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
      public async Task<int> CountModulesOwnedByManager(Guid managerId)
     {
         return await _context.Modules

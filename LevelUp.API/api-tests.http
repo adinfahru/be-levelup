@@ -2,7 +2,7 @@
 # Install "REST Client" extension in VS Code to run these tests
 # Click "Send Request" above each request to test
 
-@baseUrl = https://localhost:7118/api/v1
+@baseUrl = http://localhost:5067/api/v1
 
 ###############################################
 # 1. AUTHENTICATION
