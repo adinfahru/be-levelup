@@ -32,6 +32,10 @@ namespace LevelUp.API.Data.Configurations
                 .HasMaxLength(2000)     
                 .IsRequired(false);
 
+            builder.Property(s => s.EstimatedDays)
+                .HasColumnName("estimated_days")
+                .IsRequired(false);
+
             builder
                 .Property(s => s.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()")

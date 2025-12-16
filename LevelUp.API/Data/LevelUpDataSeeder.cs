@@ -6,45 +6,26 @@ namespace LevelUp.API.Data
     {
         public static async Task SeedAsync(LevelUpDbContext context)
         {
-            // Check if data already exists
             if (context.Accounts.Any())
-            {
-                return; // Database already seeded
-            }
+                return;
 
-            // Seed Positions
-            var positions = new List<Position>
+            // =====================
+            // POSITIONS
+            // =====================
+            var positions = new[]
             {
-                new Position
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "Fullstack .NET Developer",
-                    IsActive = true,
-                },
-                new Position
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "Fullstack Java Developer",
-                    IsActive = true,
-                },
-                new Position
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "Quality Assurance",
-                    IsActive = true,
-                },
-                new Position
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "Data Minning",
-                    IsActive = true,
-                },
+                new Position { Id = Guid.NewGuid(), Title = "Backend Developer", IsActive = true },
+                new Position { Id = Guid.NewGuid(), Title = "Frontend Developer", IsActive = true },
+                new Position { Id = Guid.NewGuid(), Title = "QA Engineer", IsActive = true },
             };
+
             await context.Positions.AddRangeAsync(positions);
             await context.SaveChangesAsync();
 
-            // Seed Accounts
-            var adminAccount = new Account
+            // =====================
+            // ACCOUNTS
+            // =====================
+            var admin = new Account
             {
                 Id = Guid.NewGuid(),
                 Email = "admin@levelup.com",
@@ -54,276 +35,201 @@ namespace LevelUp.API.Data
                 CreatedAt = DateTime.UtcNow,
             };
 
-            var managerAccount = new Account
+            var managers = new[]
             {
-                Id = Guid.NewGuid(),
-                Email = "manager@levelup.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Manager123!"),
-                Role = UserRole.Manager,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
+                new Account { Id = Guid.NewGuid(), Email = "manager1@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Manager123!"), Role = UserRole.Manager, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Account { Id = Guid.NewGuid(), Email = "manager2@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Manager123!"), Role = UserRole.Manager, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Account { Id = Guid.NewGuid(), Email = "manager3@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Manager123!"), Role = UserRole.Manager, IsActive = true, CreatedAt = DateTime.UtcNow },
             };
 
-            var employeeAccount = new Account
+            var employees = new[]
+            {
+                ("john@levelup.com","John","Doe"),
+                ("sarah@levelup.com","Sarah","Wati"),
+                ("andi@levelup.com","Andi","Saputra"),
+                ("rina@levelup.com","Rina","Amelia"),
+                ("dimas@levelup.com","Dimas","Santoso"),
+                ("nabila@levelup.com","Nabila","Putri"),
+                ("imam@levelup.com","Imam","Zuhdi"),
+                ("farhan@levelup.com","Farhan","Akbar"),
+            }
+            .Select(x => new Account
             {
                 Id = Guid.NewGuid(),
-                Email = "employee@levelup.com",
+                Email = x.Item1,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
                 Role = UserRole.Employee,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
-            };
+            })
+            .ToList();
 
-            var employeeAccount2 = new Account
-            {
-                Id = Guid.NewGuid(),
-                Email = "employee2@levelup.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
-                Role = UserRole.Employee,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            var employeeAccount3 = new Account
-            {
-                Id = Guid.NewGuid(),
-                Email = "employee3@levelup.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
-                Role = UserRole.Employee,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            var employeeAccount4 = new Account
-            {
-                Id = Guid.NewGuid(),
-                Email = "employee4@levelup.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
-                Role = UserRole.Employee,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            var employeeAccount5 = new Account
-            {
-                Id = Guid.NewGuid(),
-                Email = "employee5@levelup.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
-                Role = UserRole.Employee,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            await context.Accounts.AddRangeAsync(adminAccount, managerAccount, employeeAccount, employeeAccount2, employeeAccount3, employeeAccount4, employeeAccount5);
+            await context.Accounts.AddAsync(admin);
+            await context.Accounts.AddRangeAsync(managers);
+            await context.Accounts.AddRangeAsync(employees);
             await context.SaveChangesAsync();
 
-            // Seed Employees
-            var adminEmployee = new Employee
-            {
-                Id = Guid.NewGuid(),
-                AccountId = adminAccount.Id,
-                FirstName = "Admin",
-                LastName = "User",
-                PositionId = positions[2].Id, // Tech Lead
-                IsIdle = false,
-                CreatedAt = DateTime.UtcNow,
-            };
+            // =====================
+            // EMPLOYEES
+            // =====================
+            var employeeEntities = new List<Employee>();
 
-            var managerEmployee = new Employee
+            employeeEntities.Add(new Employee
             {
                 Id = Guid.NewGuid(),
-                AccountId = managerAccount.Id,
-                FirstName = "Manager",
-                LastName = "User",
-                PositionId = positions[1].Id, // Senior Developer
-                IsIdle = false,
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            var employeeEmployee = new Employee
-            {
-                Id = Guid.NewGuid(),
-                AccountId = employeeAccount.Id,
-                FirstName = "John",
-                LastName = "Doe",
-                PositionId = positions[0].Id, // Junior Developer
-                IsIdle = true,
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            // EXTRA EMPLOYEES (4 orang)
-            var employee2 = new Employee
-            {
-                Id = Guid.NewGuid(),
-                AccountId = employeeAccount2.Id,
-                FirstName = "Sarah",
-                LastName = "Wati",
+                AccountId = admin.Id,
+                FirstName = "Super",
+                LastName = "Admin",
                 PositionId = positions[0].Id,
-                IsIdle = false, // ACTIVE
                 CreatedAt = DateTime.UtcNow,
-            };
+            });
 
-            var employee3 = new Employee
+            for (int i = 0; i < managers.Length; i++)
             {
-                Id = Guid.NewGuid(),
-                AccountId = employeeAccount3.Id,
-                FirstName = "Dimas",
-                LastName = "Santoso",
-                PositionId = positions[1].Id,
-                IsIdle = false, // ACTIVE
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            var employee4 = new Employee
-            {
-                Id = Guid.NewGuid(),
-                AccountId = employeeAccount4.Id,
-                FirstName = "Rina",
-                LastName = "Amelia",
-                PositionId = positions[2].Id,
-                IsIdle = true, // IDLE
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            var employee5 = new Employee
-            {
-                Id = Guid.NewGuid(),
-                AccountId = employeeAccount5.Id,
-                FirstName = "Andi",
-                LastName = "Saputra",
-                PositionId = positions[1].Id,
-                IsIdle = true, // IDLE
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            await context.Employees.AddRangeAsync(adminEmployee, managerEmployee, employeeEmployee,
-                employee2, employee3, employee4, employee5);
-            await context.SaveChangesAsync();
-
-            // Seed Module
-            var module = new Module
-            {
-                Id = Guid.NewGuid(),
-                Title = "Introduction to ASP.NET Core",
-                Description = "Learn the fundamentals of ASP.NET Core web development",
-                EstimatedDays = 7,
-                IsActive = true,
-                CreatedBy = managerAccount.Id,
-                CreatedAt = DateTime.UtcNow,
-            };
-            await context.Modules.AddAsync(module);
-            await context.SaveChangesAsync();
-
-            // Seed Module Items
-            var moduleItems = new List<ModuleItem>
-            {
-                new ModuleItem
+                employeeEntities.Add(new Employee
                 {
                     Id = Guid.NewGuid(),
+                    AccountId = managers[i].Id,
+                    FirstName = "Manager",
+                    LastName = (i + 1).ToString(),
+                    PositionId = positions[0].Id,
+                    CreatedAt = DateTime.UtcNow,
+                });
+            }
+
+            for (int i = 0; i < employees.Count; i++)
+            {
+                employeeEntities.Add(new Employee
+                {
+                    Id = Guid.NewGuid(),
+                    AccountId = employees[i].Id,
+                    FirstName = employees[i].Email!.Split('@')[0],
+                    LastName = "Employee",
+                    PositionId = positions[i % positions.Length].Id,
+                    CreatedAt = DateTime.UtcNow,
+                });
+            }
+
+            await context.Employees.AddRangeAsync(employeeEntities);
+            await context.SaveChangesAsync();
+
+            // =====================
+            // MODULES + ITEMS
+            // =====================
+            Module CreateModule(Guid managerId, string title)
+            {
+                var module = new Module
+                {
+                    Id = Guid.NewGuid(),
+                    Title = title,
+                    EstimatedDays = 7,
+                    IsActive = true,
+                    CreatedBy = managerId,
+                    CreatedAt = DateTime.UtcNow,
+                };
+
+                context.Modules.Add(module);
+
+                context.ModuleItems.AddRange(
+                    new ModuleItem
+                    {
+                        Id = Guid.NewGuid(),
+                        ModuleId = module.Id,
+                        Title = "Core Task",
+                        OrderIndex = 1,
+                        IsFinalSubmission = false,
+                    },
+                    new ModuleItem
+                    {
+                        Id = Guid.NewGuid(),
+                        ModuleId = module.Id,
+                        Title = "Final Submission",
+                        OrderIndex = 2,
+                        IsFinalSubmission = true,
+                    }
+                );
+
+                return module;
+            }
+
+            var m1Module1 = CreateModule(managers[0].Id, "ASP.NET Bootcamp");
+            var m1Module2 = CreateModule(managers[0].Id, "Clean Architecture");
+            var m2Module = CreateModule(managers[1].Id, "React Basic");
+            var m3Module = CreateModule(managers[2].Id, "Testing Automation");
+
+            await context.SaveChangesAsync();
+
+            // =====================
+            // ENROLLMENT + SUBMISSION (FIXED)
+            // =====================
+            async Task CreateEnrollment(
+                Guid accountId,
+                Module module,
+                bool completeAllItems,
+                SubmissionStatus? submissionStatus = null,
+                int? estimatedDays = null
+            )
+            {
+                var enrollment = new Enrollment
+                {
+                    Id = Guid.NewGuid(),
+                    AccountId = accountId,
                     ModuleId = module.Id,
-                    Title = "Setup Development Environment",
-                    OrderIndex = 1,
-                    Descriptions = "Install Visual Studio and .NET SDK",
-                    Url = "https://docs.microsoft.com/aspnet/core",
-                    IsFinalSubmission = false,
-                },
-                new ModuleItem
+                    Status = EnrollmentStatus.OnGoing,
+                    StartDate = DateTime.UtcNow.AddDays(-7),
+                    TargetDate = DateTime.UtcNow.AddDays(7),
+                    CreatedAt = DateTime.UtcNow,
+                };
+
+                await context.Enrollments.AddAsync(enrollment);
+
+                var moduleItems = context.ModuleItems
+                    .Where(mi => mi.ModuleId == module.Id)
+                    .ToList();
+
+                foreach (var item in moduleItems)
                 {
-                    Id = Guid.NewGuid(),
-                    ModuleId = module.Id,
-                    Title = "Create First API",
-                    OrderIndex = 2,
-                    Descriptions = "Build a simple REST API",
-                    Url = "https://docs.microsoft.com/aspnet/core/tutorials",
-                    IsFinalSubmission = false,
-                },
-                new ModuleItem
+                    await context.EnrollmentItems.AddAsync(new EnrollmentItem
+                    {
+                        Id = Guid.NewGuid(),
+                        EnrollmentId = enrollment.Id,
+                        ModuleItemId = item.Id,
+                        IsCompleted = completeAllItems
+                    });
+                }
+
+                if (submissionStatus.HasValue)
                 {
-                    Id = Guid.NewGuid(),
-                    ModuleId = module.Id,
-                    Title = "Final Project Submission",
-                    OrderIndex = 3,
-                    Descriptions = "Submit your completed API project",
-                    Url = "https://github.com",
-                    IsFinalSubmission = true,
-                },
-            };
-            await context.ModuleItems.AddRangeAsync(moduleItems);
+                    await context.Submissions.AddAsync(new Submission
+                    {
+                        Id = Guid.NewGuid(),
+                        EnrollmentId = enrollment.Id,
+                        Status = submissionStatus.Value,
+                        ManagerFeedback =
+                            submissionStatus == SubmissionStatus.Rejected
+                                ? "Masih perlu revisi"
+                                : null,
+                        EstimatedDays = estimatedDays,
+                        CreatedAt = DateTime.UtcNow,
+                    });
+                }
+            }
+
+            // =====================
+            // DATA YANG MASUK TABLE SUBMISSION
+            // =====================
+            await CreateEnrollment(employees[0].Id, m1Module1, true, SubmissionStatus.Pending);
+            await CreateEnrollment(employees[1].Id, m1Module1, true, SubmissionStatus.Rejected, 3);
+            await CreateEnrollment(employees[2].Id, m1Module2, true, SubmissionStatus.Approved);
+            await CreateEnrollment(employees[3].Id, m2Module, true, SubmissionStatus.Pending);
+
+            // =====================
+            // DATA YANG TIDAK MASUK (BELUM FINAL)
+            // =====================
+            await CreateEnrollment(employees[4].Id, m1Module2, false);
+            await CreateEnrollment(employees[5].Id, m3Module, false);
+
             await context.SaveChangesAsync();
-
-            // Seed Enrollment
-            var enrollment = new Enrollment
-            {
-                Id = Guid.NewGuid(),
-                AccountId = employeeAccount.Id,
-                ModuleId = module.Id,
-                StartDate = DateTime.UtcNow.AddDays(-3),
-                TargetDate = DateTime.UtcNow.AddDays(4),
-                Status = EnrollmentStatus.OnGoing,
-                CurrentProgress = 33,
-                CreatedAt = DateTime.UtcNow,
-            };
-            await context.Enrollments.AddAsync(enrollment);
-            await context.SaveChangesAsync();
-
-            // Seed Enrollment Items
-            var enrollmentItems = new List<EnrollmentItem>
-            {
-                new EnrollmentItem
-                {
-                    Id = Guid.NewGuid(),
-                    EnrollmentId = enrollment.Id,
-                    ModuleItemId = moduleItems[0].Id,
-                    IsCompleted = true,
-                    EvidenceUrl = "https://github.com/user/repo/commit/123",
-                    CompletedAt = DateTime.UtcNow.AddDays(-2),
-                },
-                new EnrollmentItem
-                {
-                    Id = Guid.NewGuid(),
-                    EnrollmentId = enrollment.Id,
-                    ModuleItemId = moduleItems[1].Id,
-                    IsCompleted = false,
-                },
-                new EnrollmentItem
-                {
-                    Id = Guid.NewGuid(),
-                    EnrollmentId = enrollment.Id,
-                    ModuleItemId = moduleItems[2].Id,
-                    IsCompleted = false,
-                },
-            };
-            await context.EnrollmentItems.AddRangeAsync(enrollmentItems);
-            await context.SaveChangesAsync();
-
-
-var submissionPending = new Submission
-{
-    Id = Guid.NewGuid(),
-    EnrollmentId = enrollment.Id,
-    Status = SubmissionStatus.Pending,
-    Notes = "Sudah menyelesaikan setup environment dan mulai membuat API dasar.",
-    ManagerFeedback = null,
-    CreatedAt = DateTime.UtcNow.AddDays(-1),
-};
-
-var submissionRejected = new Submission
-{
-    Id = Guid.NewGuid(),
-    EnrollmentId = enrollment.Id,
-    Status = SubmissionStatus.Rejected,
-    Notes = "CRUD sudah berjalan, namun validasi dan error handling masih kurang.",
-    ManagerFeedback = "Perbaiki validasi input dan tambahkan global exception handling. Deadline 3 hari.",
-    CreatedAt = DateTime.UtcNow.AddDays(-2),
-};
-
-await context.Submissions.AddRangeAsync(
-    submissionPending,
-    submissionRejected
-);
-
-await context.SaveChangesAsync();
-
         }
     }
 }

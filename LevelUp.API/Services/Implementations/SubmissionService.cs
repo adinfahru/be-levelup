@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LevelUp.API.Data;
 using LevelUp.API.DTOs.Submissions;
 using LevelUp.API.Entity;
@@ -18,39 +19,56 @@ public class SubmissionService : ISubmissionService
     // ===============================
     // GET LIST SUBMISSIONS (MANAGER)
     // ===============================
-    public async Task<IEnumerable<SubmissionListResponse>> GetSubmissionsAsync()
+    public async Task<IEnumerable<SubmissionListResponse>> GetSubmissionsAsync(Guid managerId)
+{
+    var submissions = await _context.Submissions
+        .Include(s => s.Enrollment!)
+            .ThenInclude(e => e.Items)
+        .Include(s => s.Enrollment!)
+            .ThenInclude(e => e.Module!)
+                .ThenInclude(m => m.Items)
+        .Include(s => s.Enrollment!)
+            .ThenInclude(e => e.Account!)
+                .ThenInclude(a => a.Employee)
+        .Where(s =>
+            // 🔒 FILTER MANAGER (INI KUNCI UTAMA)
+            s.Enrollment!.Module!.CreatedBy == managerId
+
+            // ✅ Enrollment selesai
+            && s.Enrollment.Items.All(ei => ei.IsCompleted)
+
+            // ✅ Module punya final submission
+            && s.Enrollment.Module.Items.Any(mi => mi.IsFinalSubmission)
+        )
+        .OrderByDescending(s => s.CreatedAt)
+        .ToListAsync();
+
+    return submissions.Select(s =>
     {
-        var submissions = await _context.Submissions
-            .Include(s => s.Enrollment)
-                .ThenInclude(e => e.Account)
-                    .ThenInclude(a => a.Employee)
-            .Include(s => s.Enrollment)
-                .ThenInclude(e => e.Module)
-                    .ThenInclude(m => m.Items)
-            .Include(s => s.Enrollment)
-                .ThenInclude(e => e.Items)
-            .OrderByDescending(s => s.CreatedAt) // 🔥 ORDER DI ENTITY
-            .ToListAsync();
+        var completedCount = s.Enrollment!.Items.Count(ei => ei.IsCompleted);
+        var totalCount = s.Enrollment.Module!.Items.Count;
 
-        return submissions.Select(s => new SubmissionListResponse(
-            s.Id,
-            s.EnrollmentId,
+        return new SubmissionListResponse(
+            SubmissionId: s.Id,
+            EnrollmentId: s.EnrollmentId,
 
-            s.Enrollment!.Account!.Employee!.Id,
-            s.Enrollment.Account.Employee.FirstName + " " +
-            s.Enrollment.Account.Employee.LastName,
-            s.Enrollment.Account.Email!,
+            EmployeeId: s.Enrollment.Account!.Employee!.Id,
+            EmployeeName:
+                $"{s.Enrollment.Account.Employee.FirstName} {s.Enrollment.Account.Employee.LastName}",
+            Email: s.Enrollment.Account.Email!,
 
-            s.Enrollment.Module!.Id,
-            s.Enrollment.Module.Title!,
+            ModuleId: s.Enrollment.Module!.Id,
+            ModuleTitle: s.Enrollment.Module.Title!,
 
-            s.Enrollment.Items.Count(ei => ei.IsCompleted),
-            s.Enrollment.Module.Items.Count,
+            CompletedCount: completedCount,
+            TotalCount: totalCount,
 
-            s.Status,
-            s.CreatedAt
-        ));
-    }
+            Status: s.Status.ToString(),
+            SubmittedAt: s.CreatedAt
+        );
+    });
+}
+
 
     // ===============================
     // GET SUBMISSION DETAIL
@@ -103,7 +121,7 @@ public class SubmissionService : ISubmissionService
 
         return new SubmissionDetailResponse(
             submission.Id,
-            submission.Status,
+            submission.Status.ToString(),
 
             submission.Enrollment.Account!.Employee!.FirstName + " " +
             submission.Enrollment.Account.Employee.LastName,
@@ -124,38 +142,99 @@ public class SubmissionService : ISubmissionService
     // ===============================
     // APPROVE / REJECT SUBMISSION
     // ===============================
-    public async Task<SubmissionReviewResponse> ReviewSubmissionAsync(
+  public async Task<SubmissionReviewResponse> ReviewSubmissionAsync(
         Guid submissionId,
+        Guid managerId,
         SubmissionReviewRequest request
     )
     {
         var submission = await _context.Submissions
-            .Include(s => s.Enrollment)
+            .Include(s => s.Enrollment!)
+                .ThenInclude(e => e.Module)
             .FirstOrDefaultAsync(s => s.Id == submissionId);
 
         if (submission == null)
             throw new Exception("Submission not found");
 
-        submission.Status = request.Status;
+        // 🔒 VALIDASI MANAGER
+        if (submission.Enrollment!.Module!.CreatedBy != managerId)
+            throw new UnauthorizedAccessException("Not your submission");
 
-        if (request.Status == SubmissionStatus.Rejected)
+        // ======================
+        // PARSE STATUS (STRING → ENUM)
+        // ======================
+        if (string.IsNullOrWhiteSpace(request.Status))
+            throw new Exception("Status is required");
+
+        if (!Enum.TryParse<SubmissionStatus>(
+                request.Status,
+                ignoreCase: true,
+                out var parsedStatus))
         {
-            submission.ManagerFeedback = request.ManagerFeedback;
-        }
-        else
-        {
-            submission.ManagerFeedback = null;
+            throw new Exception("Invalid submission status");
         }
 
-        submission.UpdatedAt = DateTime.UtcNow;
+        // ======================
+        // VALIDASI REJECT
+        // ======================
+        if (parsedStatus == SubmissionStatus.Rejected)
+        {
+            if (string.IsNullOrWhiteSpace(request.ManagerFeedback))
+                throw new Exception("Manager feedback is required");
+
+            if (!request.EstimatedDays.HasValue || request.EstimatedDays <= 0)
+                throw new Exception("Estimated days must be greater than 0");
+
+            // 🔥 HITUNG TARGET DATE BARU (HARI KERJA)
+            submission.Enrollment.TargetDate =
+                AddWorkingDays(
+                    submission.Enrollment.TargetDate,
+                    request.EstimatedDays.Value
+                );
+        }
+
+        // ======================
+        // UPDATE SUBMISSION
+        // ======================
+        submission.Status = parsedStatus;
+        submission.ManagerFeedback = request.ManagerFeedback;
+        submission.EstimatedDays = request.EstimatedDays;
 
         await _context.SaveChangesAsync();
 
         return new SubmissionReviewResponse(
             submission.Id,
-            submission.Status,
+            submission.Status.ToString(),
             submission.ManagerFeedback,
-            submission.UpdatedAt!.Value
+            submission.EstimatedDays
         );
+    }
+
+    // ===============================
+    // HELPER: TAMBAH HARI KERJA
+    // ===============================
+    private static DateTime AddWorkingDays(
+        DateTime startDate,
+        int workingDays
+    )
+    {
+        var date = startDate;
+        var addedDays = 0;
+
+        while (addedDays < workingDays)
+        {
+            date = date.AddDays(1);
+
+            // Skip weekend
+            if (date.DayOfWeek == DayOfWeek.Saturday ||
+                date.DayOfWeek == DayOfWeek.Sunday)
+            {
+                continue;
+            }
+
+            addedDays++;
+        }
+
+        return date;
     }
 }

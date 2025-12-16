@@ -14,6 +14,6 @@ public record SubmissionListResponse(
     int CompletedCount,
     int TotalCount,
 
-    SubmissionStatus Status,
+    string Status,
     DateTime SubmittedAt
 );

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using LevelUp.API.DTOs;
 using LevelUp.API.DTOs.Submissions;
 using LevelUp.API.Services.Interfaces;
@@ -12,7 +13,7 @@ namespace LevelUp.API.Controllers;
 [Authorize(Roles = "Manager")]
 public class SubmissionController : ControllerBase
 {
-    private readonly ISubmissionService _submissionService;
+     private readonly ISubmissionService _submissionService;
 
     public SubmissionController(ISubmissionService submissionService)
     {
@@ -23,14 +24,15 @@ public class SubmissionController : ControllerBase
     // GET LIST SUBMISSIONS
     // ===============================
     [HttpGet]
-    public async Task<IActionResult> GetSubmissions()
-    {
-        var result = await _submissionService.GetSubmissionsAsync();
+ public async Task<IActionResult> GetSubmissions()
+{
+    var managerId = Guid.Parse(
+        User.FindFirstValue(ClaimTypes.NameIdentifier)!
+    );
 
-        return Ok(new ApiResponse<IEnumerable<SubmissionListResponse>>(
-            result
-        ));
-    }
+    var result = await _submissionService.GetSubmissionsAsync(managerId);
+    return Ok(new ApiResponse<IEnumerable<SubmissionListResponse>>(result));
+}
 
     // ===============================
     // GET SUBMISSION DETAIL
@@ -41,9 +43,17 @@ public class SubmissionController : ControllerBase
         var result = await _submissionService.GetSubmissionDetailAsync(id);
 
         if (result == null)
-            return NotFound(new ApiResponse<string>("Submission not found"));
+            return NotFound(new ApiResponse<string>(
+                404,
+                "Submission not found",
+                null
+            ));
 
-        return Ok(new ApiResponse<SubmissionDetailResponse>(result));
+        return Ok(new ApiResponse<SubmissionDetailResponse>(
+            200,
+            "OK",
+            result
+        ));
     }
 
     // ===============================
@@ -51,20 +61,20 @@ public class SubmissionController : ControllerBase
     // ===============================
     [HttpPatch("{id:guid}/review")]
     public async Task<IActionResult> ReviewSubmission(
-        Guid id,
-        [FromBody] SubmissionReviewRequest request
-    )
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(new ApiResponse<string>("Invalid request"));
+    Guid id,
+    [FromBody] SubmissionReviewRequest request
+)
+{
+    var managerId = Guid.Parse(
+        User.FindFirstValue(ClaimTypes.NameIdentifier)!
+    );
 
-        var result = await _submissionService.ReviewSubmissionAsync(id, request);
+    var result = await _submissionService.ReviewSubmissionAsync(
+        id,
+        managerId,
+        request
+    );
 
-        return Ok(new ApiResponse<SubmissionReviewResponse>(
-            200,
-            "Submission reviewed successfully",
-            result
-));
-
-    }
+    return Ok(new ApiResponse<SubmissionReviewResponse>(result));
+}
 }

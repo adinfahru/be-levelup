@@ -124,7 +124,7 @@ public class DashboardService : IDashboardService
         var managerEmployeeId = managerEmployee.Id;
 
         var enrollments = await _context.Enrollments
-            .Include(e => e.Account).ThenInclude(a => a.Employee)
+            .Include(e => e.Account!).ThenInclude(a => a.Employee)
             .Include(e => e.Module)
             .Where(e => e.Module != null && e.Module.CreatedBy == managerEmployeeId)
             .ToListAsync();
@@ -132,7 +132,7 @@ public class DashboardService : IDashboardService
         return enrollments
             .Where(e => e.Account?.Employee != null)
             .Select(e => new EmployeeEnrollResponse(
-                e.Account.Employee.Id,
+                e.Account!.Employee!.Id,
                 e.Account.Employee.FirstName ?? "",
                 e.Account.Employee.LastName ?? "",
                 e.Account.Email ?? "",

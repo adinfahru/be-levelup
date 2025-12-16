@@ -9,6 +9,7 @@ namespace LevelUp.API.Entity
         public SubmissionStatus Status { get; set; }
         public string? Notes { get; set;}
         public string? ManagerFeedback { get; set; }
+        public int? EstimatedDays { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 

@@ -3,7 +3,7 @@ using LevelUp.API.Entity;
 
 public record SubmissionDetailResponse(
     Guid SubmissionId,
-    SubmissionStatus Status,
+    string Status,
 
     string EmployeeName,
     string Email,

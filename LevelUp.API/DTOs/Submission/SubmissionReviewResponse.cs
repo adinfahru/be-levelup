@@ -2,7 +2,7 @@ using LevelUp.API.Entity;
 
 public record SubmissionReviewResponse(
     Guid SubmissionId,
-    SubmissionStatus Status,
+    string Status,
     string? ManagerFeedback,
-    DateTime ReviewedAt
+    int? EstimatedDays
 );
