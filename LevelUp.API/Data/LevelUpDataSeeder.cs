@@ -96,20 +96,20 @@ namespace LevelUp.API.Data
                 return;
 
             // =====================
-            // POSITIONS
+            // POSITIONS (Fixed GUIDs 10000000-...)
             // =====================
             var positions = new[]
             {
-                new Position { Id = Guid.NewGuid(), Title = "Backend Developer", IsActive = true },
-                new Position { Id = Guid.NewGuid(), Title = "Frontend Developer", IsActive = true },
-                new Position { Id = Guid.NewGuid(), Title = "QA Engineer", IsActive = true },
+                new Position { Id = Guid.Parse("10000000-0000-0000-0000-000000000001"), Title = "Backend Developer", IsActive = true },
+                new Position { Id = Guid.Parse("10000000-0000-0000-0000-000000000002"), Title = "Frontend Developer", IsActive = true },
+                new Position { Id = Guid.Parse("10000000-0000-0000-0000-000000000003"), Title = "QA Engineer", IsActive = true },
             };
 
             await context.Positions.AddRangeAsync(positions);
             await context.SaveChangesAsync();
 
             // =====================
-            // ACCOUNTS
+            // ACCOUNTS (Fixed GUIDs 20000000-...)
             // =====================
             var admin = new Account
             {
@@ -121,48 +121,41 @@ namespace LevelUp.API.Data
                 CreatedAt = DateTime.UtcNow,
             };
 
-            var managers = new[]
+            var manager = new Account
             {
-                new Account { Id = Guid.NewGuid(), Email = "manager1@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Manager123!"), Role = UserRole.Manager, IsActive = true, CreatedAt = DateTime.UtcNow },
-                new Account { Id = Guid.NewGuid(), Email = "manager2@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Manager123!"), Role = UserRole.Manager, IsActive = true, CreatedAt = DateTime.UtcNow },
-                new Account { Id = Guid.NewGuid(), Email = "manager3@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Manager123!"), Role = UserRole.Manager, IsActive = true, CreatedAt = DateTime.UtcNow },
+                Id = Guid.Parse("20000000-0000-0000-0000-000000000002"),
+                Email = "manager@levelup.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Manager123!"),
+                Role = UserRole.Manager,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
             };
 
             var employees = new[]
             {
-                ("john@levelup.com","John","Doe"),
-                ("sarah@levelup.com","Sarah","Wati"),
-                ("andi@levelup.com","Andi","Saputra"),
-                ("rina@levelup.com","Rina","Amelia"),
-                ("dimas@levelup.com","Dimas","Santoso"),
-                ("nabila@levelup.com","Nabila","Putri"),
-                ("imam@levelup.com","Imam","Zuhdi"),
-                ("farhan@levelup.com","Farhan","Akbar"),
-            }
-            .Select(x => new Account
-            {
-                Id = Guid.NewGuid(),
-                Email = x.Item1,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"),
-                Role = UserRole.Employee,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-            })
-            .ToList();
+                new Account { Id = Guid.Parse("20000000-0000-0000-0000-000000000003"), Email = "employee@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"), Role = UserRole.Employee, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Account { Id = Guid.Parse("20000000-0000-0000-0000-000000000004"), Email = "employee2@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"), Role = UserRole.Employee, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Account { Id = Guid.Parse("20000000-0000-0000-0000-000000000005"), Email = "employee3@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"), Role = UserRole.Employee, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Account { Id = Guid.Parse("20000000-0000-0000-0000-000000000006"), Email = "employee4@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"), Role = UserRole.Employee, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Account { Id = Guid.Parse("20000000-0000-0000-0000-000000000007"), Email = "employee5@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"), Role = UserRole.Employee, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Account { Id = Guid.Parse("20000000-0000-0000-0000-000000000008"), Email = "employee6@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"), Role = UserRole.Employee, IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Account { Id = Guid.Parse("20000000-0000-0000-0000-000000000009"), Email = "employee7@levelup.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Employee123!"), Role = UserRole.Employee, IsActive = true, CreatedAt = DateTime.UtcNow },
+            };
 
             await context.Accounts.AddAsync(admin);
-            await context.Accounts.AddRangeAsync(managers);
+            await context.Accounts.AddAsync(manager);
             await context.Accounts.AddRangeAsync(employees);
             await context.SaveChangesAsync();
 
             // =====================
-            // EMPLOYEES
+            // EMPLOYEES (Fixed GUIDs 30000000-...)
             // =====================
             var employeeEntities = new List<Employee>();
 
+            // Admin Employee
             employeeEntities.Add(new Employee
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Parse("30000000-0000-0000-0000-000000000001"),
                 AccountId = admin.Id,
                 FirstName = "Super",
                 LastName = "Admin",
@@ -170,28 +163,29 @@ namespace LevelUp.API.Data
                 CreatedAt = DateTime.UtcNow,
             });
 
-            for (int i = 0; i < managers.Length; i++)
+            // Manager Employee
+            employeeEntities.Add(new Employee
             {
-                employeeEntities.Add(new Employee
-                {
-                    Id = Guid.NewGuid(),
-                    AccountId = managers[i].Id,
-                    FirstName = "Manager",
-                    LastName = (i + 1).ToString(),
-                    PositionId = positions[0].Id,
-                    CreatedAt = DateTime.UtcNow,
-                });
-            }
+                Id = Guid.Parse("30000000-0000-0000-0000-000000000002"),
+                AccountId = manager.Id,
+                FirstName = "Manager",
+                LastName = "One",
+                PositionId = positions[0].Id,
+                CreatedAt = DateTime.UtcNow,
+            });
 
-            for (int i = 0; i < employees.Count; i++)
+            // Regular Employees
+            var empNames = new[] { "John", "Jessica", "Christopher", "Amanda", "Daniel", "Michael", "Sarah" };
+            for (int i = 0; i < employees.Length; i++)
             {
                 employeeEntities.Add(new Employee
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.Parse($"30000000-0000-0000-0000-00000000000{3 + i}"),
                     AccountId = employees[i].Id,
-                    FirstName = employees[i].Email!.Split('@')[0],
+                    FirstName = empNames[i],
                     LastName = "Employee",
                     PositionId = positions[i % positions.Length].Id,
+                    IsIdle = i >= 5, // Last 2 are idle (never enrolled)
                     CreatedAt = DateTime.UtcNow,
                 });
             }
@@ -200,120 +194,274 @@ namespace LevelUp.API.Data
             await context.SaveChangesAsync();
 
             // =====================
-            // MODULES + ITEMS
+            // MODULES (Fixed GUIDs 40000000-...)
             // =====================
-            Module CreateModule(Guid managerId, string title)
+            var modules = new[]
             {
-                var module = new Module
+                new Module
                 {
-                    Id = Guid.NewGuid(),
-                    Title = title,
+                    Id = Guid.Parse("40000000-0000-0000-0000-000000000001"),
+                    Title = "ASP.NET Core Fundamentals",
+                    Description = "Learn ASP.NET Core basics",
                     EstimatedDays = 7,
                     IsActive = true,
-                    CreatedBy = managerId,
+                    CreatedBy = manager.Id,
                     CreatedAt = DateTime.UtcNow,
-                };
+                },
+                new Module
+                {
+                    Id = Guid.Parse("40000000-0000-0000-0000-000000000002"),
+                    Title = "Advanced C# Programming",
+                    Description = "Master advanced C# concepts",
+                    EstimatedDays = 14,
+                    IsActive = true,
+                    CreatedBy = manager.Id,
+                    CreatedAt = DateTime.UtcNow,
+                },
+                new Module
+                {
+                    Id = Guid.Parse("40000000-0000-0000-0000-000000000003"),
+                    Title = "Microservices Architecture",
+                    Description = "Build scalable microservices",
+                    EstimatedDays = 21,
+                    IsActive = false, // INACTIVE
+                    CreatedBy = manager.Id,
+                    CreatedAt = DateTime.UtcNow,
+                },
+                new Module
+                {
+                    Id = Guid.Parse("40000000-0000-0000-0000-000000000004"),
+                    Title = "Entity Framework Core",
+                    Description = "Database design with EF Core",
+                    EstimatedDays = 10,
+                    IsActive = true,
+                    CreatedBy = manager.Id,
+                    CreatedAt = DateTime.UtcNow,
+                },
+                new Module
+                {
+                    Id = Guid.Parse("40000000-0000-0000-0000-000000000005"),
+                    Title = "React Fundamentals",
+                    Description = "Front-end development with React",
+                    EstimatedDays = 12,
+                    IsActive = true,
+                    CreatedBy = manager.Id,
+                    CreatedAt = DateTime.UtcNow,
+                },
+            };
 
-                context.Modules.Add(module);
-
-                context.ModuleItems.AddRange(
-                    new ModuleItem
-                    {
-                        Id = Guid.NewGuid(),
-                        ModuleId = module.Id,
-                        Title = "Core Task",
-                        OrderIndex = 1,
-                        IsFinalSubmission = false,
-                    },
-                    new ModuleItem
-                    {
-                        Id = Guid.NewGuid(),
-                        ModuleId = module.Id,
-                        Title = "Final Submission",
-                        OrderIndex = 2,
-                        IsFinalSubmission = true,
-                    }
-                );
-
-                return module;
-            }
-
-            var m1Module1 = CreateModule(managers[0].Id, "ASP.NET Bootcamp");
-            var m1Module2 = CreateModule(managers[0].Id, "Clean Architecture");
-            var m2Module = CreateModule(managers[1].Id, "React Basic");
-            var m3Module = CreateModule(managers[2].Id, "Testing Automation");
-
+            await context.Modules.AddRangeAsync(modules);
             await context.SaveChangesAsync();
 
             // =====================
-            // ENROLLMENT + SUBMISSION (FIXED)
+            // MODULE ITEMS (Fixed GUIDs 50000000-...)
             // =====================
-            async Task CreateEnrollment(
-                Guid accountId,
-                Module module,
-                bool completeAllItems,
-                SubmissionStatus? submissionStatus = null,
-                int? estimatedDays = null
-            )
+            var moduleItems = new List<ModuleItem>();
+            int itemIndex = 1;
+
+            foreach (var module in modules)
             {
-                var enrollment = new Enrollment
+                for (int i = 1; i <= 3; i++)
                 {
-                    Id = Guid.NewGuid(),
-                    AccountId = accountId,
-                    ModuleId = module.Id,
-                    Status = EnrollmentStatus.OnGoing,
-                    StartDate = DateTime.UtcNow.AddDays(-7),
-                    TargetDate = DateTime.UtcNow.AddDays(7),
-                    CreatedAt = DateTime.UtcNow,
-                };
-
-                await context.Enrollments.AddAsync(enrollment);
-
-                var moduleItems = context.ModuleItems
-                    .Where(mi => mi.ModuleId == module.Id)
-                    .ToList();
-
-                foreach (var item in moduleItems)
-                {
-                    await context.EnrollmentItems.AddAsync(new EnrollmentItem
+                    moduleItems.Add(new ModuleItem
                     {
-                        Id = Guid.NewGuid(),
-                        EnrollmentId = enrollment.Id,
-                        ModuleItemId = item.Id,
-                        IsCompleted = completeAllItems
+                        Id = Guid.Parse($"50000000-0000-0000-0000-{itemIndex:000000000000}"),
+                        ModuleId = module.Id,
+                        Title = i < 3 ? $"Task {i}" : "Final Submission",
+                        OrderIndex = i,
+                        IsFinalSubmission = i == 3,
                     });
-                }
-
-                if (submissionStatus.HasValue)
-                {
-                    await context.Submissions.AddAsync(new Submission
-                    {
-                        Id = Guid.NewGuid(),
-                        EnrollmentId = enrollment.Id,
-                        Status = submissionStatus.Value,
-                        ManagerFeedback =
-                            submissionStatus == SubmissionStatus.Rejected
-                                ? "Masih perlu revisi"
-                                : null,
-                        EstimatedDays = estimatedDays,
-                        CreatedAt = DateTime.UtcNow,
-                    });
+                    itemIndex++;
                 }
             }
 
-            // =====================
-            // DATA YANG MASUK TABLE SUBMISSION
-            // =====================
-            await CreateEnrollment(employees[0].Id, m1Module1, true, SubmissionStatus.Pending);
-            await CreateEnrollment(employees[1].Id, m1Module1, true, SubmissionStatus.Rejected, 3);
-            await CreateEnrollment(employees[2].Id, m1Module2, true, SubmissionStatus.Approved);
-            await CreateEnrollment(employees[3].Id, m2Module, true, SubmissionStatus.Pending);
+            await context.ModuleItems.AddRangeAsync(moduleItems);
+            await context.SaveChangesAsync();
 
             // =====================
-            // DATA YANG TIDAK MASUK (BELUM FINAL)
+            // ENROLLMENTS + ENROLLMENT ITEMS + SUBMISSIONS (Fixed GUIDs 60000000-... & 70000000-... & 80000000-...)
             // =====================
-            await CreateEnrollment(employees[4].Id, m1Module2, false);
-            await CreateEnrollment(employees[5].Id, m3Module, false);
+            int enrollmentIndex = 1;
+            int enrollItemIndex = 1;
+            int submissionIndex = 1;
+
+            // Employee 0 (John): OnGoing Module 1, 1/3 completed
+            var enroll1 = new Enrollment
+            {
+                Id = Guid.Parse($"60000000-0000-0000-0000-{enrollmentIndex:000000000000}"),
+                AccountId = employees[0].Id,
+                ModuleId = modules[0].Id,
+                Status = EnrollmentStatus.OnGoing,
+                StartDate = DateTime.UtcNow.AddDays(-7),
+                TargetDate = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow,
+            };
+            enrollmentIndex++;
+            employeeEntities[2].IsIdle = true; // John is idle (ongoing)
+
+            // Employee 1 (Jessica): OnGoing Module 4, 2/3 completed + Completed Module 2
+            var enroll2 = new Enrollment
+            {
+                Id = Guid.Parse($"60000000-0000-0000-0000-{enrollmentIndex:000000000000}"),
+                AccountId = employees[1].Id,
+                ModuleId = modules[3].Id,
+                Status = EnrollmentStatus.OnGoing,
+                StartDate = DateTime.UtcNow.AddDays(-10),
+                TargetDate = DateTime.UtcNow.AddDays(5),
+                CreatedAt = DateTime.UtcNow,
+            };
+            enrollmentIndex++;
+            employeeEntities[3].IsIdle = true; // Jessica is idle (ongoing)
+
+            var enroll2b = new Enrollment
+            {
+                Id = Guid.Parse($"60000000-0000-0000-0000-{enrollmentIndex:000000000000}"),
+                AccountId = employees[1].Id,
+                ModuleId = modules[1].Id,
+                Status = EnrollmentStatus.Completed,
+                StartDate = DateTime.UtcNow.AddDays(-30),
+                TargetDate = DateTime.UtcNow.AddDays(-5),
+                CompletedDate = DateTime.UtcNow.AddDays(-5),
+                CreatedAt = DateTime.UtcNow,
+            };
+            enrollmentIndex++;
+
+            // Employee 2 (Christopher): Paused Module 5, 2/3 completed + Completed Module 1
+            var enroll3 = new Enrollment
+            {
+                Id = Guid.Parse($"60000000-0000-0000-0000-{enrollmentIndex:000000000000}"),
+                AccountId = employees[2].Id,
+                ModuleId = modules[4].Id,
+                Status = EnrollmentStatus.Paused,
+                StartDate = DateTime.UtcNow.AddDays(-15),
+                TargetDate = DateTime.UtcNow.AddDays(10),
+                CreatedAt = DateTime.UtcNow,
+            };
+            enrollmentIndex++;
+            employeeEntities[4].IsIdle = false; // Christopher is NOT idle (paused)
+
+            var enroll3b = new Enrollment
+            {
+                Id = Guid.Parse($"60000000-0000-0000-0000-{enrollmentIndex:000000000000}"),
+                AccountId = employees[2].Id,
+                ModuleId = modules[0].Id,
+                Status = EnrollmentStatus.Completed,
+                StartDate = DateTime.UtcNow.AddDays(-40),
+                TargetDate = DateTime.UtcNow.AddDays(-15),
+                CompletedDate = DateTime.UtcNow.AddDays(-15),
+                CreatedAt = DateTime.UtcNow,
+            };
+            enrollmentIndex++;
+
+            // Employee 3 (Amanda): Completed Module 5 only (Idle, never had ongoing)
+            var enroll4 = new Enrollment
+            {
+                Id = Guid.Parse($"60000000-0000-0000-0000-{enrollmentIndex:000000000000}"),
+                AccountId = employees[3].Id,
+                ModuleId = modules[4].Id,
+                Status = EnrollmentStatus.Completed,
+                StartDate = DateTime.UtcNow.AddDays(-20),
+                TargetDate = DateTime.UtcNow.AddDays(-5),
+                CompletedDate = DateTime.UtcNow.AddDays(-5),
+                CreatedAt = DateTime.UtcNow,
+            };
+            enrollmentIndex++;
+            employeeEntities[5].IsIdle = true; // Amanda is idle (completed only)
+
+            // Employee 4 (Daniel): OnGoing Module 2, 1/3 completed
+            var enroll5 = new Enrollment
+            {
+                Id = Guid.Parse($"60000000-0000-0000-0000-{enrollmentIndex:000000000000}"),
+                AccountId = employees[4].Id,
+                ModuleId = modules[1].Id,
+                Status = EnrollmentStatus.OnGoing,
+                StartDate = DateTime.UtcNow.AddDays(-5),
+                TargetDate = DateTime.UtcNow.AddDays(10),
+                CreatedAt = DateTime.UtcNow,
+            };
+            enrollmentIndex++;
+            employeeEntities[6].IsIdle = true; // Daniel is idle (ongoing)
+
+            var allEnrollments = new[] { enroll1, enroll2, enroll2b, enroll3, enroll3b, enroll4, enroll5 };
+            await context.Enrollments.AddRangeAsync(allEnrollments);
+            await context.SaveChangesAsync();
+
+            // Create Enrollment Items
+            var enrollmentItemsMap = new Dictionary<Guid, List<ModuleItem>>
+            {
+                { enroll1.Id, moduleItems.Where(mi => mi.ModuleId == modules[0].Id).ToList() },
+                { enroll2.Id, moduleItems.Where(mi => mi.ModuleId == modules[3].Id).ToList() },
+                { enroll2b.Id, moduleItems.Where(mi => mi.ModuleId == modules[1].Id).ToList() },
+                { enroll3.Id, moduleItems.Where(mi => mi.ModuleId == modules[4].Id).ToList() },
+                { enroll3b.Id, moduleItems.Where(mi => mi.ModuleId == modules[0].Id).ToList() },
+                { enroll4.Id, moduleItems.Where(mi => mi.ModuleId == modules[4].Id).ToList() },
+                { enroll5.Id, moduleItems.Where(mi => mi.ModuleId == modules[1].Id).ToList() },
+            };
+
+            var completedCounts = new Dictionary<Guid, int>
+            {
+                { enroll1.Id, 1 }, // 1/3
+                { enroll2.Id, 2 }, // 2/3
+                { enroll2b.Id, 3 }, // 3/3 (completed)
+                { enroll3.Id, 2 }, // 2/3
+                { enroll3b.Id, 3 }, // 3/3 (completed)
+                { enroll4.Id, 3 }, // 3/3 (completed)
+                { enroll5.Id, 1 }, // 1/3
+            };
+
+            foreach (var enrollment in allEnrollments)
+            {
+                var items = enrollmentItemsMap[enrollment.Id];
+                int completedCount = completedCounts[enrollment.Id];
+
+                for (int i = 0; i < items.Count; i++)
+                {
+                    await context.EnrollmentItems.AddAsync(new EnrollmentItem
+                    {
+                        Id = Guid.Parse($"70000000-0000-0000-0000-{enrollItemIndex:000000000000}"),
+                        EnrollmentId = enrollment.Id,
+                        ModuleItemId = items[i].Id,
+                        IsCompleted = i < completedCount,
+                    });
+                    enrollItemIndex++;
+                }
+            }
+
+            // Create Submissions
+            await context.Submissions.AddAsync(new Submission
+            {
+                Id = Guid.Parse($"80000000-0000-0000-0000-{submissionIndex:000000000000}"),
+                EnrollmentId = enroll2b.Id,
+                Status = SubmissionStatus.Approved,
+                ManagerFeedback = "Excellent work!",
+                EstimatedDays = 14,
+                CreatedAt = DateTime.UtcNow,
+            });
+            submissionIndex++;
+
+            await context.Submissions.AddAsync(new Submission
+            {
+                Id = Guid.Parse($"80000000-0000-0000-0000-{submissionIndex:000000000000}"),
+                EnrollmentId = enroll3b.Id,
+                Status = SubmissionStatus.Approved,
+                ManagerFeedback = "Great job!",
+                EstimatedDays = 7,
+                CreatedAt = DateTime.UtcNow,
+            });
+            submissionIndex++;
+
+            await context.Submissions.AddAsync(new Submission
+            {
+                Id = Guid.Parse($"80000000-0000-0000-0000-{submissionIndex:000000000000}"),
+                EnrollmentId = enroll4.Id,
+                Status = SubmissionStatus.Approved,
+                ManagerFeedback = "Perfect execution!",
+                EstimatedDays = 12,
+                CreatedAt = DateTime.UtcNow,
+            });
+
+            // Update employees after setting IsIdle
+            context.Employees.UpdateRange(employeeEntities);
 
             await context.SaveChangesAsync();
         }
