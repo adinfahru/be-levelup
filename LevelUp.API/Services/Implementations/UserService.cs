@@ -131,11 +131,18 @@ public class UserService : IUserService
         if (account is null)
             throw new NullReferenceException("Account not found");
 
-        // Ambil employee berdasarkan AccountId
+        // Ambil employee berdasarkan AccountId dengan Position
         var employee = await _employeeRepository.GetByAccountIdAsync(accountId, cancellationToken);
 
         if (employee is null)
             throw new NullReferenceException("Employee not found for this account");
+
+        // Load Position if PositionId exists
+        Position? position = null;
+        if (employee.PositionId.HasValue)
+        {
+            position = await _positionRepository.GetByIdAsync(employee.PositionId.Value, cancellationToken);
+        }
 
         return new UserResponse(
             account.Id,
@@ -145,6 +152,7 @@ public class UserService : IUserService
             employee.FirstName ?? "",
             employee.LastName ?? "",
             employee.PositionId,
+            position?.Title,
             account.CreatedAt,
             account.UpdatedAt
         );
@@ -158,7 +166,8 @@ public class UserService : IUserService
         CancellationToken cancellationToken)
     {
         IQueryable<Account> query = _accountRepository.GetQueryable()
-            .Include(a => a.Employee);
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Position);
 
         // Filter by isActive
         if (isActive.HasValue)
@@ -184,6 +193,7 @@ public class UserService : IUserService
                 account.Employee?.FirstName ?? "",
                 account.Employee?.LastName ?? "",
                 account.Employee?.PositionId,
+                account.Employee?.Position?.Title,
                 account.CreatedAt,
                 account.UpdatedAt
             )
