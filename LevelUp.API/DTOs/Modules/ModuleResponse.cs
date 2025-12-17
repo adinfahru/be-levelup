@@ -23,6 +23,8 @@ public record ModuleDetailResponse(
     Guid CreatedBy,
     string CreatedByName,
     DateTime CreatedAt,
+    int EnrolledCount,
+    int ActiveCount,
     List<ModuleItemResponse> Items
 );
 
@@ -34,4 +36,15 @@ public record ModuleItemResponse(
     string? Descriptions,
     string? Url,
     bool IsFinalSubmission
+);
+
+public record ModuleEnrollmentUserResponse(
+    Guid ModuleId,
+    Guid EmployeeId,
+    string FirstName,
+    string LastName,
+    string Email,
+    string? PositionName,
+    bool IsIdle,
+    string EnrollmentStatus
 );

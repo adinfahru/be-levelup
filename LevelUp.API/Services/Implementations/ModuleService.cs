@@ -72,6 +72,7 @@ public class ModuleService : IModuleService
     var module = await _moduleRepository.GetQueryable()
         .Include(m => m.Creator)
             .ThenInclude(c => c!.Employee)
+        .Include(m => m.Enrollments)
         .FirstOrDefaultAsync(m => m.Id == id);
 
     if (module == null) return null;
@@ -94,6 +95,9 @@ public class ModuleService : IModuleService
         ? $"{module.Creator.Employee.FirstName} {module.Creator.Employee.LastName}"
         : "Unknown";
 
+    var enrolledCount = module.Enrollments.Count;
+    var activeCount = module.Enrollments.Count(e => e.Status == EnrollmentStatus.OnGoing);
+
     return new ModuleDetailResponse(
         module.Id,
         module.Title ?? string.Empty,
@@ -103,8 +107,31 @@ public class ModuleService : IModuleService
         module.CreatedBy,
         createdByName,
         module.CreatedAt,
+        enrolledCount,
+        activeCount,
         items
     );
+  }
+
+  public async Task<List<ModuleEnrollmentUserResponse>> GetModuleEnrollmentsAsync(Guid moduleId)
+  {
+    var enrollments = await _enrollmentRepository.GetQueryable()
+        .Where(e => e.ModuleId == moduleId)
+        .Include(e => e.Account)
+            .ThenInclude(a => a!.Employee)
+            .ThenInclude(emp => emp!.Position)
+        .ToListAsync();
+
+    return enrollments.Select(e => new ModuleEnrollmentUserResponse(
+        moduleId,
+        e.Account!.Employee!.Id,
+        e.Account!.Employee!.FirstName ?? string.Empty,
+        e.Account!.Employee!.LastName ?? string.Empty,
+        e.Account!.Email ?? string.Empty,
+        e.Account!.Employee!.Position?.Title,
+        e.Account!.Employee!.IsIdle,
+        e.Status.ToString()
+    )).ToList();
   }
 
   public async Task<ModuleResponse> CreateAsync(CreateModuleRequest request, Guid managerId)
