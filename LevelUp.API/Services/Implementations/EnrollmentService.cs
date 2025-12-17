@@ -2,6 +2,7 @@ using LevelUp.API.DTOs.Enrolls;
 using LevelUp.API.Entity;
 using LevelUp.API.Repositories.Interfaces;
 using LevelUp.API.Services.Interfaces;
+using LevelUp.API.Utilities;
 
 namespace LevelUp.API.Services.Implementations;
 
@@ -10,27 +11,29 @@ public class EnrollmentService : IEnrollmentService
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IModuleRepository _moduleRepository;
-    private readonly IModuleItemRepository _moduleItemRepository;
-    private readonly IAccountRepository _accountRepository;
+    private readonly ISubmissionRepository _submissionRepository;
     private readonly IEmployeeRepository _employeeRepository;
     private readonly IEnrollmentItemRepository _enrollmentItemRepository;
+    private readonly IEmailHandler _emailHandler;
 
     public EnrollmentService(
         IEnrollmentRepository enrollmentRepository,
         IUnitOfWork unitOfWork,
         IModuleRepository moduleRepository,
         IModuleItemRepository moduleItemRepository,
+        ISubmissionRepository submissionRepository,
         IAccountRepository accountRepository,
         IEnrollmentItemRepository enrollmentItemRepository,
-        IEmployeeRepository employeeRepository)
+        IEmployeeRepository employeeRepository,
+        IEmailHandler emailHandler)
     {
         _enrollmentRepository = enrollmentRepository;
         _unitOfWork = unitOfWork;
         _moduleRepository = moduleRepository;
-        _moduleItemRepository = moduleItemRepository;
-        _accountRepository = accountRepository;
         _enrollmentItemRepository = enrollmentItemRepository;
         _employeeRepository = employeeRepository;
+        _submissionRepository = submissionRepository;
+        _emailHandler = emailHandler;
     }
 
     public async Task<EnrollmentResponse> GetEnrollmentProgressAsync(
@@ -164,6 +167,63 @@ public class EnrollmentService : IEnrollmentService
         nextItem.EvidenceUrl = request.EvidenceUrl;
         nextItem.Feedback = request.Feedback;
         nextItem.CompletedAt = DateTime.UtcNow;
+
+        // 8.5 HANDLE FINAL SUBMISSION (CREATE / RESUBMIT)
+        // 8.5 HANDLE FINAL SUBMISSION (CREATE / RESUBMIT)
+        if (nextItem.ModuleItem!.IsFinalSubmission)
+        {
+            var submission = await _submissionRepository
+                .GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
+
+            var isResubmission = false;
+
+            if (submission == null)
+            {
+                // 🆕 first time final submission
+                submission = new Submission
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment.Id,
+                    Status = SubmissionStatus.Pending,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _submissionRepository.CreateAsync(submission, cancellationToken);
+            }
+            else if (submission.Status == SubmissionStatus.Rejected)
+            {
+                // 🔁 resubmission after rejected
+                submission.Status = SubmissionStatus.Pending;
+                submission.ManagerFeedback = null;
+                submission.EstimatedDays = null;
+                submission.UpdatedAt = DateTime.UtcNow;
+
+                isResubmission = true;
+
+                await _submissionRepository.UpdateAsync(submission);
+            }
+
+            try
+            {
+                var enrollmodule = await _moduleRepository.GetByIdWithCreatorAsync(enrollment.ModuleId, cancellationToken);
+
+                await _emailHandler.EmailAsync(new EmailDto(
+                    enrollmodule.Creator.Email!,
+                    isResubmission
+                        ? "Submission Resubmitted"
+                        : "New Final Submission",
+                    isResubmission
+                        ? $"<p>The final submission for <b>{enrollmodule.Title}</b> has been resubmitted and is ready for review.</p>"
+                        : $"<p>A new final submission for <b>{enrollmodule.Title}</b> has been submitted and requires your review.</p>"
+                ));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("EMAIL FAILED:");
+                Console.WriteLine(ex.Message);
+            }
+        }
+
 
         // 9. Update progress
         var completedCount = orderedItems.Count(i => i.IsCompleted);

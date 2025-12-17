@@ -2,7 +2,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 
-namespace MentorHub.API.Utilities;
+namespace LevelUp.API.Utilities;
 
 public record EmailDto(
     string To,

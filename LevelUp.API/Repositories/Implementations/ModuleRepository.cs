@@ -40,4 +40,14 @@ public class ModuleRepository : Repository<Module>, IModuleRepository
             .Include(m => m.Enrollments)
             .ToListAsync();
     }
+
+    public async Task<Module?> GetByIdWithCreatorAsync(
+    Guid moduleId,
+    CancellationToken cancellationToken)
+    {
+        return await _context.Modules
+            .Include(m => m.Creator)
+            .FirstOrDefaultAsync(m => m.Id == moduleId, cancellationToken);
+    }
+
 }

@@ -3,14 +3,14 @@ using LevelUp.API.Data;
 using LevelUp.API.DTOs.Submissions;
 using LevelUp.API.Entity;
 using LevelUp.API.Services.Interfaces;
-using MentorHub.API.Utilities;
+using LevelUp.API.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace LevelUp.API.Services.Implementations;
 
 public class SubmissionService : ISubmissionService
 {
-        private readonly LevelUpDbContext _context;
+    private readonly LevelUpDbContext _context;
     private readonly IEmailHandler _email;
 
     public SubmissionService(LevelUpDbContext context, IEmailHandler email)
@@ -145,7 +145,7 @@ public class SubmissionService : ISubmissionService
     // ===============================
     // APPROVE / REJECT SUBMISSION
     // ===============================
- // APPROVE / REJECT SUBMISSION
+    // APPROVE / REJECT SUBMISSION
     public async Task<SubmissionReviewResponse> ReviewSubmissionAsync(
         Guid submissionId,
         Guid managerId,
@@ -179,6 +179,7 @@ public class SubmissionService : ISubmissionService
             if (!request.EstimatedDays.HasValue || request.EstimatedDays <= 0)
                 throw new Exception("Estimated days must be greater than 0");
 
+            // 🔁 Extend target date
             submission.Enrollment.TargetDate = AddWorkingDays(
                 submission.Enrollment.TargetDate,
                 request.EstimatedDays.Value
@@ -186,12 +187,41 @@ public class SubmissionService : ISubmissionService
 
             submission.ManagerFeedback = request.ManagerFeedback;
             submission.EstimatedDays = request.EstimatedDays;
+
+            // ===============================
+            // 🔥 RESET FINAL SUBMISSION SECTION
+            // ===============================
+            var finalItem = await _context.EnrollmentItems
+                .Include(ei => ei.ModuleItem)
+                .Where(ei =>
+                    ei.EnrollmentId == submission.EnrollmentId &&
+                    ei.ModuleItem!.IsFinalSubmission)
+                .FirstOrDefaultAsync();
+
+            if (finalItem != null)
+            {
+                finalItem.IsCompleted = false;
+                finalItem.CompletedAt = null;
+                finalItem.EvidenceUrl = null;
+                finalItem.Feedback = null;
+            }
         }
-        else
+        else if (parsedStatus == SubmissionStatus.Approved)
         {
+            // ===============================
+            // ✅ FINAL APPROVAL → COMPLETE ENROLLMENT
+            // ===============================
+            submission.Enrollment.Status = EnrollmentStatus.Completed;
+            submission.Enrollment.CompletedDate = DateTime.UtcNow;
+            submission.Enrollment.UpdatedAt = DateTime.UtcNow;
+
+            // safety: pastikan progress full
+            submission.Enrollment.CurrentProgress = 100;
+
             submission.ManagerFeedback = null;
             submission.EstimatedDays = null;
         }
+
 
         submission.Status = parsedStatus;
         submission.UpdatedAt = DateTime.UtcNow;
