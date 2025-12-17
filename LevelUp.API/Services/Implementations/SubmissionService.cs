@@ -3,17 +3,20 @@ using LevelUp.API.Data;
 using LevelUp.API.DTOs.Submissions;
 using LevelUp.API.Entity;
 using LevelUp.API.Services.Interfaces;
+using MentorHub.API.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace LevelUp.API.Services.Implementations;
 
 public class SubmissionService : ISubmissionService
 {
-    private readonly LevelUpDbContext _context;
+        private readonly LevelUpDbContext _context;
+    private readonly IEmailHandler _email;
 
-    public SubmissionService(LevelUpDbContext context)
+    public SubmissionService(LevelUpDbContext context, IEmailHandler email)
     {
         _context = context;
+        _email = email;
     }
 
     // ===============================
@@ -142,41 +145,32 @@ public class SubmissionService : ISubmissionService
     // ===============================
     // APPROVE / REJECT SUBMISSION
     // ===============================
+ // APPROVE / REJECT SUBMISSION
     public async Task<SubmissionReviewResponse> ReviewSubmissionAsync(
-          Guid submissionId,
-          Guid managerId,
-          SubmissionReviewRequest request
-      )
+        Guid submissionId,
+        Guid managerId,
+        SubmissionReviewRequest request
+    )
     {
         var submission = await _context.Submissions
             .Include(s => s.Enrollment!)
-                .ThenInclude(e => e.Module)
+                .ThenInclude(e => e.Module!)
+            .Include(s => s.Enrollment!)
+                .ThenInclude(e => e.Account!)
             .FirstOrDefaultAsync(s => s.Id == submissionId);
 
         if (submission == null)
             throw new Exception("Submission not found");
 
-        // 🔒 VALIDASI MANAGER
         if (submission.Enrollment!.Module!.CreatedBy != managerId)
             throw new UnauthorizedAccessException("Not your submission");
 
-        // ======================
-        // PARSE STATUS (STRING → ENUM)
-        // ======================
         if (string.IsNullOrWhiteSpace(request.Status))
             throw new Exception("Status is required");
 
-        if (!Enum.TryParse<SubmissionStatus>(
-                request.Status,
-                ignoreCase: true,
-                out var parsedStatus))
-        {
+        if (!Enum.TryParse(request.Status, true, out SubmissionStatus parsedStatus))
             throw new Exception("Invalid submission status");
-        }
 
-        // ======================
-        // VALIDASI REJECT
-        // ======================
         if (parsedStatus == SubmissionStatus.Rejected)
         {
             if (string.IsNullOrWhiteSpace(request.ManagerFeedback))
@@ -185,29 +179,42 @@ public class SubmissionService : ISubmissionService
             if (!request.EstimatedDays.HasValue || request.EstimatedDays <= 0)
                 throw new Exception("Estimated days must be greater than 0");
 
-            // 🔥 HITUNG TARGET DATE BARU (HARI KERJA)
-            submission.Enrollment.TargetDate =
-                AddWorkingDays(
-                    submission.Enrollment.TargetDate,
-                    request.EstimatedDays.Value
-                );
+            submission.Enrollment.TargetDate = AddWorkingDays(
+                submission.Enrollment.TargetDate,
+                request.EstimatedDays.Value
+            );
+
+            submission.ManagerFeedback = request.ManagerFeedback;
+            submission.EstimatedDays = request.EstimatedDays;
         }
-
-        // ======================
-        // UPDATE SUBMISSION
-        // ======================
-        submission.Status = parsedStatus;
-        submission.ManagerFeedback = request.ManagerFeedback;
-        submission.EstimatedDays = request.EstimatedDays;
-
-        // If submission is approved, mark enrollment as Completed
-        if (parsedStatus == SubmissionStatus.Approved)
+        else
         {
-            submission.Enrollment.Status = EnrollmentStatus.Completed;
-            submission.Enrollment.CompletedDate = DateTime.UtcNow;
+            submission.ManagerFeedback = null;
+            submission.EstimatedDays = null;
         }
+
+        submission.Status = parsedStatus;
+        submission.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        try
+        {
+            await _email.EmailAsync(new EmailDto(
+                submission.Enrollment.Account!.Email!,
+                parsedStatus == SubmissionStatus.Approved
+                    ? "Submission Approved"
+                    : "Submission Rejected",
+                parsedStatus == SubmissionStatus.Approved
+                    ? $"<p>Your submission for <b>{submission.Enrollment.Module!.Title}</b> is approved.</p>"
+                    : $"<p>Your submission for <b>{submission.Enrollment.Module!.Title}</b> is <b>Rejected</b>.</p><br/><p>Feedback: {submission.ManagerFeedback}<br/>Estimated Days: {submission.EstimatedDays}</p>"
+            ));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("EMAIL FAILED:");
+            Console.WriteLine(ex.Message);
+        }
 
         return new SubmissionReviewResponse(
             submission.Id,

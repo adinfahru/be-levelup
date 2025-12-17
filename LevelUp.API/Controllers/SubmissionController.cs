@@ -61,20 +61,34 @@ public class SubmissionController : ControllerBase
     // ===============================
     [HttpPatch("{id:guid}/review")]
     public async Task<IActionResult> ReviewSubmission(
-    Guid id,
-    [FromBody] SubmissionReviewRequest request
-)
-{
-    var managerId = Guid.Parse(
-        User.FindFirstValue(ClaimTypes.NameIdentifier)!
-    );
+        Guid id,
+        [FromBody] SubmissionReviewRequest request
+    )
+    {
+        var managerIdClaim =
+            User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    var result = await _submissionService.ReviewSubmissionAsync(
-        id,
-        managerId,
-        request
-    );
+        if (string.IsNullOrEmpty(managerIdClaim))
+        {
+            return Unauthorized(new ApiResponse<string>(
+                401,
+                "Invalid or expired token",
+                null
+            ));
+        }
 
-    return Ok(new ApiResponse<SubmissionReviewResponse>(result));
-}
+        var managerId = Guid.Parse(managerIdClaim);
+
+        var result = await _submissionService.ReviewSubmissionAsync(
+            id,
+            managerId,
+            request
+        );
+
+        return Ok(new ApiResponse<SubmissionReviewResponse>(
+            200,
+            "Submission reviewed successfully",
+            result
+        ));
+    }
 }
