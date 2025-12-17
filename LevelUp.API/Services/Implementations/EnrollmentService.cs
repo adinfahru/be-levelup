@@ -228,7 +228,6 @@ public class EnrollmentService : IEnrollmentService
         );
     }
 
-
     public async Task<EnrollmentResponse> EnrollAsync(
     Guid accountId,
     Guid moduleId,
@@ -343,44 +342,36 @@ public class EnrollmentService : IEnrollmentService
     Guid accountId,
     CancellationToken cancellationToken)
     {
-        // 1. Ambil employee berdasarkan accountId (JWT source of truth)
+        // 1. Ambil employee
         var employee = await _employeeRepository
             .GetByAccountIdAsync(accountId, cancellationToken)
             ?? throw new InvalidOperationException("Employee not found");
 
-        // 2. Ambil enrollment aktif (OnGoing)
-        var activeEnrollment = await _enrollmentRepository
+        // 2. Ambil enrollment current (OnGoing / Paused / WaitingReview)
+        var enrollment = await _enrollmentRepository
             .GetActiveByUserIdAsync(accountId, cancellationToken);
 
-        // 3. Jika employee tidak idle → auto pause
-        if (!employee.IsIdle)
-        {
-            if (activeEnrollment is not null &&
-                activeEnrollment.Status == EnrollmentStatus.OnGoing)
-            {
-                activeEnrollment.Status = EnrollmentStatus.Paused;
-                activeEnrollment.UpdatedAt = DateTime.UtcNow;
-
-                await _enrollmentRepository.UpdateAsync(activeEnrollment);
-            }
-
-            return null; // learning disembunyikan
-        }
-
-        // 4. Idle tapi tidak ada enrollment aktif
-        if (activeEnrollment is null)
+        if (enrollment is null)
             return null;
 
-        // 5. Ambil module
+        // 3. Auto-pause kalau employee tidak idle
+        if (!employee.IsIdle && enrollment.Status == EnrollmentStatus.OnGoing)
+        {
+            enrollment.Status = EnrollmentStatus.Paused;
+            enrollment.UpdatedAt = DateTime.UtcNow;
+
+            await _enrollmentRepository.UpdateAsync(enrollment);
+        }
+
+        // 4. Ambil module
         var module = await _moduleRepository
-            .GetByIdAsync(activeEnrollment.ModuleId, cancellationToken)
+            .GetByIdAsync(enrollment.ModuleId, cancellationToken)
             ?? throw new InvalidOperationException("Module not found");
 
-        // 6. Ambil enrollment items
+        // 5. Ambil enrollment items
         var enrollmentItems = await _enrollmentItemRepository
-            .GetByEnrollmentIdAsync(activeEnrollment.Id, cancellationToken);
+            .GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
 
-        // 7. Mapping sections
         var sections = enrollmentItems
             .OrderBy(ei => ei.ModuleItem!.OrderIndex)
             .Select(ei => new EnrollmentItemDto(
@@ -397,20 +388,21 @@ public class EnrollmentService : IEnrollmentService
             ))
             .ToList();
 
-        // 8. Return response
+        // 6. Return ke FE (PAUSED TETAP DIKIRIM)
         return new EnrollmentResponse(
-            EnrollmentId: activeEnrollment.Id,
+            EnrollmentId: enrollment.Id,
             ModuleId: module.Id,
             ModuleTitle: module.Title!,
             ModuleDescription: module.Description!,
-            StartDate: activeEnrollment.StartDate,
-            TargetDate: activeEnrollment.TargetDate,
-            CompletedDate: activeEnrollment.CompletedDate,
-            Status: activeEnrollment.Status,
-            CurrentProgress: activeEnrollment.CurrentProgress,
+            StartDate: enrollment.StartDate,
+            TargetDate: enrollment.TargetDate,
+            CompletedDate: enrollment.CompletedDate,
+            Status: enrollment.Status,
+            CurrentProgress: enrollment.CurrentProgress,
             Sections: sections
         );
     }
+
 
 
     public async Task<List<EnrollmentResponse>> GetEnrollmentHistoryAsync(
