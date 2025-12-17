@@ -22,6 +22,20 @@ namespace LevelUp.API.Data.Configurations
                 .HasColumnName("status")
                 .HasConversion<string>();
 
+            builder.Property(s => s.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(2000)      
+                .IsRequired(false);
+
+            builder.Property(s => s.ManagerFeedback)
+                .HasColumnName("manager_feedback")
+                .HasMaxLength(2000)     
+                .IsRequired(false);
+
+            builder.Property(s => s.EstimatedDays)
+                .HasColumnName("estimated_days")
+                .IsRequired(false);
+
             builder
                 .Property(s => s.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()")

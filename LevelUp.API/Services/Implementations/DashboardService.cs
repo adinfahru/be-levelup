@@ -99,6 +99,19 @@ public class DashboardService : IDashboardService
 
         employee.IsIdle = isIdle;
 
+        // Update enrollment status based on idle status
+        // If isIdle = true: enrollments become OnGoing (employee is idle, meaning they're working)
+        // If isIdle = false: enrollments become Paused (employee is not idle, meaning they're paused)
+        // NOTE: Completed enrollments are NOT changed (they stay Completed)
+        var employeeEnrollments = await _context.Enrollments
+            .Where(e => e.Account!.Id == employee.Account!.Id && e.Status != EnrollmentStatus.Completed)
+            .ToListAsync(cancellationToken);
+
+        foreach (var enrollment in employeeEnrollments)
+        {
+            enrollment.Status = isIdle ? EnrollmentStatus.OnGoing : EnrollmentStatus.Paused;
+        }
+
         return await _context.SaveChangesAsync(cancellationToken) > 0;
     }
 
@@ -110,8 +123,8 @@ public class DashboardService : IDashboardService
             .ThenInclude(a => a!.Employee)
             .Include(e => e.Module)
             .Where(e => e.Module != null && e.Module.CreatedBy == accountIdFromJwt)
-            .ToListAsync();
 
+            .ToListAsync();
         return enrollments
             .Where(e => e.Account?.Employee != null)
             .Select(e => new EmployeeEnrollResponse(

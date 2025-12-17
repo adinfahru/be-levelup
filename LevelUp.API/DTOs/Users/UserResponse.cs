@@ -11,6 +11,7 @@ public record UserResponse
     string FirstName,
     string LastName,
     Guid? PositionId,
+    string? PositionName,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );
