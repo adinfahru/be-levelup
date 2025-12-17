@@ -66,7 +66,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "manager@levelup.com",
+  "email": "manager1@levelup.com",
   "password": "Manager123!"
 }
 
@@ -159,8 +159,8 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/users
 Authorization: Bearer {{adminToken}}
 
-### 2.2 Get All Users with Filters
-GET {{baseUrl}}/users?page=1&limit=10&role=Employee&isActive=true
+### 2.2 Get User by ID (Admin) - Replace {userId} with actual ID
+GET {{baseUrl}}/users/20000000-0000-0000-0000-000000000009
 Authorization: Bearer {{adminToken}}
 
 ### 2.3 Create New User (Admin)
@@ -272,6 +272,11 @@ Authorization: Bearer {{managerToken}}
 
 ### 4.3 Get Module by ID - Module 1 (ASP.NET Core)
 GET {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001
+Authorization: Bearer {{managerToken}}
+
+### 4.3.1 Get Module Enrollments - See all users enrolled in Module 1
+# Manager only endpoint - returns list of employees enrolled with their status
+GET {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001/enrollments
 Authorization: Bearer {{managerToken}}
 
 ### 4.4 Create Module (Manager Only)
