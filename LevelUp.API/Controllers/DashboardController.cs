@@ -11,7 +11,7 @@ namespace LevelUp.API.Controllers;
 [Route("api/v1/[controller]")]
 [Authorize(Roles = "Manager")]
 public class DashboardController : ControllerBase
-{
+{   
     private readonly IDashboardService _dashboardService;
 
     public DashboardController(IDashboardService dashboardService)
@@ -19,7 +19,7 @@ public class DashboardController : ControllerBase
         _dashboardService = dashboardService;
     }
 
-    // DASHBOARD STATS
+    // DASHBOARD STATS  
     [HttpGet("manager/dashboard")]
     public async Task<IActionResult> GetDashboard()
     {
