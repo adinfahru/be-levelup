@@ -26,6 +26,7 @@ builder.Services.AddScoped<IModuleItemRepository, ModuleItemRepository>();
 builder.Services.AddScoped<IModuleRepository, ModuleRepository>();
 builder.Services.AddScoped<IPositionRepository, PositionRepository>();
 builder.Services.AddScoped<ISubmissionRepository, SubmissionRepository>();
+builder.Services.AddScoped<IEnrollmentItemRepository, EnrollmentItemRepository>();
 
 // Add utilities
 builder.Services.AddScoped<IHashHandler, HashHandler>();
@@ -36,9 +37,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPositionService, PositionService>();
 builder.Services.AddScoped<IModuleService, ModuleService>();
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
-
 
 //Global Exception
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

@@ -2,6 +2,92 @@ using LevelUp.API.Entity;
 
 namespace LevelUp.API.Data
 {
+    /*
+     * ===== FIXED GUID REFERENCE =====
+     * All IDs are fixed for consistent testing without manual replacement
+     * 
+     * POSITIONS (10000000-...)
+     * - 10000000-0000-0000-0000-000000000001 = Fullstack .NET Developer
+     * - 10000000-0000-0000-0000-000000000002 = Fullstack Java Developer
+     * - 10000000-0000-0000-0000-000000000003 = Quality Assurance
+     * 
+     * ACCOUNTS (20000000-...)
+     * - 20000000-0000-0000-0000-000000000001 = Admin (admin@levelup.com)
+     * - 20000000-0000-0000-0000-000000000002 = Manager (manager@levelup.com)
+     * - 20000000-0000-0000-0000-000000000003 = John Doe (employee@levelup.com)
+     * - 20000000-0000-0000-0000-000000000004 = Jessica Martinez (employee2@levelup.com)
+     * - 20000000-0000-0000-0000-000000000005 = Christopher Taylor (employee3@levelup.com)
+     * - 20000000-0000-0000-0000-000000000006 = Amanda Davis (employee4@levelup.com)
+     * - 20000000-0000-0000-0000-000000000007 = Daniel Thompson (employee5@levelup.com)
+     * - 20000000-0000-0000-0000-000000000008 = Michael Anderson (employee6@levelup.com) - NEVER ENROLLED
+     * - 20000000-0000-0000-0000-000000000009 = Sarah Wilson (employee7@levelup.com) - NEVER ENROLLED
+     * 
+     * EMPLOYEES (30000000-...)
+     * - 30000000-0000-0000-0000-000000000001 = Admin Employee
+     * - 30000000-0000-0000-0000-000000000002 = Manager Employee
+     * - 30000000-0000-0000-0000-000000000003 = John Doe
+     * - 30000000-0000-0000-0000-000000000004 = Jessica Martinez
+     * - 30000000-0000-0000-0000-000000000005 = Christopher Taylor
+     * - 30000000-0000-0000-0000-000000000006 = Amanda Davis
+     * - 30000000-0000-0000-0000-000000000007 = Daniel Thompson
+     * - 30000000-0000-0000-0000-000000000008 = Michael Anderson - NEVER ENROLLED
+     * - 30000000-0000-0000-0000-000000000009 = Sarah Wilson - NEVER ENROLLED
+     * 
+     * MODULES (40000000-...)
+     * - 40000000-0000-0000-0000-000000000001 = Introduction to ASP.NET Core (7 days)
+     * - 40000000-0000-0000-0000-000000000002 = Advanced C# Programming (14 days)
+     * - 40000000-0000-0000-0000-000000000003 = Microservices Architecture (21 days) - INACTIVE
+     * - 40000000-0000-0000-0000-000000000004 = Database Design with Entity Framework (10 days)
+     * - 40000000-0000-0000-0000-000000000005 = React Fundamentals (12 days)
+     * 
+     * MODULE ITEMS (50000000-...)
+     * Module 1 (ASP.NET Core):
+     *   - 50000000-0000-0000-0000-000000000001 = Setup Development Environment
+     *   - 50000000-0000-0000-0000-000000000002 = Create First API
+     *   - 50000000-0000-0000-0000-000000000003 = Final Project Submission
+     * Module 2 (Advanced C#):
+     *   - 50000000-0000-0000-0000-000000000004 = Async/Await Deep Dive
+     *   - 50000000-0000-0000-0000-000000000005 = LINQ Mastery
+     *   - 50000000-0000-0000-0000-000000000006 = Delegates and Events
+     *   - 50000000-0000-0000-0000-000000000007 = Generics and Collections
+     *   - 50000000-0000-0000-0000-000000000008 = Final Project
+     * Module 3 (Microservices):
+     *   - 50000000-0000-0000-0000-000000000009 = Microservices Introduction
+     *   - 50000000-0000-0000-0000-000000000010 = Docker Containerization
+     *   - 50000000-0000-0000-0000-000000000011 = Final Microservices Project
+     * Module 4 (EF Core):
+     *   - 50000000-0000-0000-0000-000000000012 = EF Core Basics
+     *   - 50000000-0000-0000-0000-000000000013 = Database Migrations
+     *   - 50000000-0000-0000-0000-000000000014 = Final Database Project
+     * Module 5 (React):
+     *   - 50000000-0000-0000-0000-000000000015 = React Setup and JSX
+     *   - 50000000-0000-0000-0000-000000000016 = State and Props
+     *   - 50000000-0000-0000-0000-000000000017 = Hooks Deep Dive
+     *   - 50000000-0000-0000-0000-000000000018 = Final React Application
+     * 
+     * ENROLLMENTS (60000000-...)
+     * - 60000000-0000-0000-0000-000000000001 = John (OnGoing) in Module 1 (1/3 completed)
+     * - 60000000-0000-0000-0000-000000000002 = Jessica (Completed) in Module 2 (5/5 completed)
+     * - 60000000-0000-0000-0000-000000000003 = Jessica (OnGoing) in Module 4 (2/3 completed)
+     * - 60000000-0000-0000-0000-000000000004 = Christopher (Paused) in Module 5 (2/4 completed)
+     * - 60000000-0000-0000-0000-000000000005 = Christopher (Completed) in Module 1 (3/3 completed)
+     * - 60000000-0000-0000-0000-000000000006 = Daniel (OnGoing) in Module 2 (1/5 completed)
+     * - 60000000-0000-0000-0000-000000000007 = Amanda (Completed) in Module 5 (4/4 completed)
+     * 
+     * ENROLLMENT ITEMS (70000000-...)
+     * Enrollment 1 (John - Module 1): 70000000-...-0001 to 0003
+     * Enrollment 2 (Jessica - Module 2): 70000000-...-0004 to 0008
+     * Enrollment 3 (Jessica - Module 4): 70000000-...-0009 to 0011
+     * Enrollment 4 (Christopher - Module 5): 70000000-...-0012 to 0015
+     * Enrollment 5 (Christopher - Module 1): 70000000-...-0016 to 0018
+     * Enrollment 6 (Daniel - Module 2): 70000000-...-0019 to 0023
+     * Enrollment 7 (Amanda - Module 5): 70000000-...-0024 to 0027
+     * 
+     * SUBMISSIONS (80000000-...)
+     * - 80000000-0000-0000-0000-000000000001 = Jessica's Module 2 (Approved)
+     * - 80000000-0000-0000-0000-000000000002 = Christopher's Module 1 (Pending)
+     * - 80000000-0000-0000-0000-000000000003 = Amanda's Module 5 (Approved)
+     */
     public class LevelUpDataSeeder
     {
         public static async Task SeedAsync(LevelUpDbContext context)
@@ -27,7 +113,7 @@ namespace LevelUp.API.Data
             // =====================
             var admin = new Account
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Parse("20000000-0000-0000-0000-000000000001"),
                 Email = "admin@levelup.com",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
                 Role = UserRole.Admin,

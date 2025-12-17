@@ -14,8 +14,8 @@ public class DashboardService : IDashboardService
     private readonly LevelUpDbContext _context;
 
     public DashboardService(
-        IEmployeeRepository employeeRepository, 
-        IModuleRepository moduleRepository, 
+        IEmployeeRepository employeeRepository,
+        IModuleRepository moduleRepository,
         LevelUpDbContext context)
     {
         _employeeRepository = employeeRepository;
@@ -28,23 +28,14 @@ public class DashboardService : IDashboardService
     /// </summary>
     public async Task<DashboardResponse> GetDashboardAsync(Guid accountIdFromJwt)
     {
-        // Ambil employee yang terkait dengan accountId
-        var managerEmployee = await _employeeRepository
-            .GetByAccountIdAsync(accountIdFromJwt, CancellationToken.None);
-
-        if (managerEmployee == null)
-            throw new Exception("Manager not found");
-
-        var managerEmployeeId = managerEmployee.Id;
-
-        // Hitung total modules yang dibuat manager
+        // Hitung total modules yang dibuat manager (CreatedBy adalah Account ID)
         int totalModules = await _context.Modules
-            .CountAsync(m => m.CreatedBy == managerEmployeeId);
+            .CountAsync(m => m.CreatedBy == accountIdFromJwt);
 
         // Hitung total enrollments dari modul yang dibuat manager
         int totalEnroll = await _context.Enrollments
             .Include(e => e.Module)
-            .CountAsync(e => e.Module != null && e.Module.CreatedBy == managerEmployeeId);
+            .CountAsync(e => e.Module != null && e.Module.CreatedBy == accountIdFromJwt);
 
         // Hitung total employee & idle
         var allEmployees = await _employeeRepository.GetAllEmployees();
@@ -114,19 +105,11 @@ public class DashboardService : IDashboardService
     // Enrollments berdasarkan manager
     public async Task<IEnumerable<EmployeeEnrollResponse>> GetEnrollmentsByManagerId(Guid accountIdFromJwt)
     {
-        // Ambil employee manager
-        var managerEmployee = await _employeeRepository
-            .GetByAccountIdAsync(accountIdFromJwt, CancellationToken.None);
-
-        if (managerEmployee == null)
-            throw new Exception("Manager not found");
-
-        var managerEmployeeId = managerEmployee.Id;
-
         var enrollments = await _context.Enrollments
-            .Include(e => e.Account!).ThenInclude(a => a.Employee)
+            .Include(e => e.Account)
+            .ThenInclude(a => a!.Employee)
             .Include(e => e.Module)
-            .Where(e => e.Module != null && e.Module.CreatedBy == managerEmployeeId)
+            .Where(e => e.Module != null && e.Module.CreatedBy == accountIdFromJwt)
             .ToListAsync();
 
         return enrollments
@@ -138,7 +121,6 @@ public class DashboardService : IDashboardService
                 e.Account.Email ?? "",
                 e.Account.Employee.IsIdle,
                 e.Status.ToString()
-            ))
-            .ToList();
+            ));
     }
 }

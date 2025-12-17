@@ -2,7 +2,49 @@
 # Install "REST Client" extension in VS Code to run these tests
 # Click "Send Request" above each request to test
 
-@baseUrl = https://localhost:7118/api/v1
+@baseUrl = http://localhost:5067/api/v1
+
+###############################################
+# FIXED GUID REFERENCE
+###############################################
+# All IDs are now fixed for consistent testing!
+# 
+# MODULES:
+# - Module 1: 40000000-0000-0000-0000-000000000001 (ASP.NET Core)
+# - Module 2: 40000000-0000-0000-0000-000000000002 (Advanced C#)
+# - Module 3: 40000000-0000-0000-0000-000000000003 (Microservices) - INACTIVE
+# - Module 4: 40000000-0000-0000-0000-000000000004 (EF Core)
+# - Module 5: 40000000-0000-0000-0000-000000000005 (React)
+#
+# ENROLLMENTS:
+# - Enrollment 1 (John-Module1): 60000000-0000-0000-0000-000000000001
+# - Enrollment 2 (Jessica-Module2): 60000000-0000-0000-0000-000000000002
+# - Enrollment 3 (Jessica-Module4): 60000000-0000-0000-0000-000000000003
+# - Enrollment 4 (Christopher-Module5): 60000000-0000-0000-0000-000000000004
+# - Enrollment 5 (Christopher-Module1): 60000000-0000-0000-0000-000000000005
+# - Enrollment 6 (Daniel-Module2): 60000000-0000-0000-0000-000000000006
+# - Enrollment 7 (Amanda-Module5): 60000000-0000-0000-0000-000000000007
+#
+# MODULE ITEMS (Module 1):
+# - Item 1: 50000000-0000-0000-0000-000000000001 (Setup Dev Env)
+# - Item 2: 50000000-0000-0000-0000-000000000002 (Create First API)
+# - Item 3: 50000000-0000-0000-0000-000000000003 (Final Submission)
+#
+# MODULE ITEMS (Module 2):
+# - Item 1: 50000000-0000-0000-0000-000000000004 (Async/Await)
+# - Item 2: 50000000-0000-0000-0000-000000000005 (LINQ)
+# - Item 3: 50000000-0000-0000-0000-000000000006 (Delegates)
+# - Item 4: 50000000-0000-0000-0000-000000000007 (Generics)
+# - Item 5: 50000000-0000-0000-0000-000000000008 (Final Project)
+#
+# EMPLOYEES (for Employee Detail):
+# - Employee 3 (John): 30000000-0000-0000-0000-000000000003
+# - Employee 4 (Jessica): 30000000-0000-0000-0000-000000000004
+# - Employee 5 (Christopher): 30000000-0000-0000-0000-000000000005
+# - Employee 6 (Amanda): 30000000-0000-0000-0000-000000000006
+# - Employee 7 (Daniel): 30000000-0000-0000-0000-000000000007
+# - Employee 8 (Michael): 30000000-0000-0000-0000-000000000008
+# - Employee 9 (Sarah): 30000000-0000-0000-0000-000000000009
 
 ###############################################
 # 1. AUTHENTICATION
@@ -38,6 +80,46 @@ Content-Type: application/json
   "password": "Employee123!"
 }
 
+### 1.3.1 Login as Employee2 - Has Completed & Ongoing
+# @name employee2Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "employee2@levelup.com",
+  "password": "Employee123!"
+}
+
+### 1.3.2 Login as Employee3 - Has Completed & Paused
+# @name employee3Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "employee3@levelup.com",
+  "password": "Employee123!"
+}
+
+### 1.3.3 Login as Employee4 - Only Completed (Idle)
+# @name employee4Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "employee4@levelup.com",
+  "password": "Employee123!"
+}
+
+### 1.3.4 Login as Employee6 - Never Enrolled (Idle)
+# @name employee6Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "employee6@levelup.com",
+  "password": "Employee123!"
+}
+
 ###############################################
 # TOKEN VARIABLES (Auto-extracted from login responses)
 ###############################################
@@ -45,6 +127,10 @@ Content-Type: application/json
 @adminToken = {{adminLogin.response.body.data.token}}
 @managerToken = {{managerLogin.response.body.data.token}}
 @employeeToken = {{employeeLogin.response.body.data.token}}
+@employee2Token = {{employee2Login.response.body.data.token}}
+@employee3Token = {{employee3Login.response.body.data.token}}
+@employee4Token = {{employee4Login.response.body.data.token}}
+@employee6Token = {{employee6Login.response.body.data.token}}
 
 ### 1.4 Login - Invalid Credentials (Should Fail)
 POST {{baseUrl}}/auth/login
@@ -184,8 +270,8 @@ Authorization: Bearer {{managerToken}}
 GET {{baseUrl}}/modules?page=1&limit=10&isActive=true
 Authorization: Bearer {{managerToken}}
 
-### 4.3 Get Module by ID - Replace {moduleId}
-GET {{baseUrl}}/modules/61ac00a2-b35a-4784-b83a-61bb1b2471a3
+### 4.3 Get Module by ID - Module 1 (ASP.NET Core)
+GET {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001
 Authorization: Bearer {{managerToken}}
 
 ### 4.4 Create Module (Manager Only)
@@ -194,15 +280,15 @@ Content-Type: application/json
 Authorization: Bearer {{managerToken}}
 
 {
-  "title": "Advanced C#",
-  "description": "Learn advanced C# concepts and best practices",
+  "title": ".NET 8 Advanced Concepts",
+  "description": "sebuah desc",
   "estimatedDays": 14,
   "items": [
     {
       "title": "Async/Await Deep Dive",
       "orderIndex": 1,
       "description": "Understanding async programming patterns",
-      "url": "https://example.com/resources/async",
+      "url": "",
       "isFinalSubmission": false
     },
     {
@@ -222,21 +308,70 @@ Authorization: Bearer {{managerToken}}
   ]
 }
 
-### 4.5 Update Module (Manager Only) - Replace {moduleId}
-PUT {{baseUrl}}/modules/e5efb0a7-331d-46f1-a478-d1b551a0662e
+### 4.5 Update Module - Without Enrollments (Should Succeed)
+# Test updating all fields when module has no enrollments (Module 3 is inactive)
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003
 Content-Type: application/json
 Authorization: Bearer {{managerToken}}
 
 {
   "title": "Advanced C# Programming - Updated",
   "description": "Learn advanced C# concepts with .NET 8",
-  "estimatedDays": 21
+  "estimatedDays": 21,
+  "isActive": true
 }
 
-### 4.6 Get Modules without Token (Should Fail - 401)
+### 4.6 Update Module - With Ongoing Enrollments (Should Fail)
+# Test updating fields other than isActive when module has ongoing enrollments
+# Module 1 has ongoing enrollments (John, Daniel)
+# Expected: 400 Bad Request with message about ongoing enrollments
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "ASP.NET Core - Updated Title",
+  "description": "This update should fail if there are ongoing enrollments"
+}
+
+### 4.7 Soft Delete Module - With Ongoing Enrollments (Should Succeed)
+# Test deactivating module (isActive = false) when there are ongoing enrollments
+# Expected: Success - users can't enroll anymore but existing enrollments continue
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "isActive": false
+}
+
+### 4.8 Reactivate Module - Without Ongoing Enrollments (Should Succeed)
+# Test reactivating module when all enrollments are completed/paused
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "isActive": true
+}
+
+### 4.9 Update Module - After All Enrollments Completed (Should Succeed)
+# Test full update when no ongoing enrollments exist (all completed/paused)
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "React Fundamentals - Fully Updated",
+  "description": "This should work when all enrollments are completed or paused",
+  "estimatedDays": 10,
+  "isActive": true
+}
+
+### 4.10 Get Modules without Token (Should Fail - 401)
 GET {{baseUrl}}/modules
 
-### 4.7 Create Module as Employee (Should Fail - 403)
+### 4.11 Create Module as Employee (Should Fail - 403)
 POST {{baseUrl}}/modules
 Content-Type: application/json
 Authorization: Bearer {{employeeToken}}
@@ -247,77 +382,481 @@ Authorization: Bearer {{employeeToken}}
   "estimatedDays": 7
 }
 
-### 4.8 Get Modules as Admin (Should Fail - 403)
+### 4.12 Get Modules as Admin (Should Fail - 403)
 GET {{baseUrl}}/modules
 Authorization: Bearer {{adminToken}}
 
+### 4.13 Update Module by Non-Creator Manager (Should Fail - 403)
+# Test that only the manager who created the module can update it
+# Note: In seeder, all modules created by same manager, so this might not fail
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "This should fail if current manager didn't create this module"
+}
+
 ###############################################
-# 5. ENROLLMENT MANAGEMENT (Employee)
+# 5. MODULE ITEMS MANAGEMENT (Manager Only)
 ###############################################
 
-### 5.1 Get All Enrollments (Employee)
-GET {{baseUrl}}/enrollments
+### 5.1 Add Module Item - Success (No Ongoing Enrollments)
+# Module 3 (Microservices) is inactive and has no enrollments
+POST {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "New Section - Testing API",
+  "orderIndex": 2,
+  "descriptions": "Learn how to test APIs with Postman",
+  "url": "https://learning.postman.com",
+  "isFinalSubmission": false
+}
+
+### 5.2 Add Module Item - Fail (Ongoing Enrollments)
+# Module 1 has ongoing enrollments (John, Daniel)
+# Expected: 400 Bad Request - Cannot add items with ongoing enrollments
+POST {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001/items
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "This Should Fail",
+  "orderIndex": 1,
+  "descriptions": "Cannot add to module with active enrollments",
+  "url": "https://example.com",
+  "isFinalSubmission": false
+}
+
+### 5.3 Add Module Item - Set as Final Submission
+POST {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "Project Submission 2",
+  "orderIndex": 10,
+  "descriptions": "Submit your final project",
+  "url": "https://github.com",
+  "isFinalSubmission": true
+}
+
+### 5.4 Add Module Item - Without Optional Fields
+POST {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "Minimal Item",
+  "orderIndex": 5,
+  "isFinalSubmission": false
+}
+
+### 5.5 Update Module Item - Success (No Ongoing Enrollments)
+# Module 3, Item 1 (Microservices Introduction)
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items/50000000-0000-0000-0000-000000000009
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "Updated Section Title",
+  "descriptions": "Updated description with more details",
+  "url": "https://updated-url.com",
+  "isFinalSubmission": false
+}
+
+### 5.6 Update Module Item - Fail (Ongoing Enrollments)
+# Module 1, Item 1 (Setup Development Environment)
+# Expected: 400 Bad Request - Cannot update items with ongoing enrollments
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001/items/50000000-0000-0000-0000-000000000001
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "This Update Should Fail",
+  "descriptions": "Cannot update module with active enrollments"
+}
+
+### 5.7 Update Module Item - Set as Final Submission
+# This will unset isFinalSubmission from other items automatically
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items/50000000-0000-0000-0000-000000000009
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "New Final Submission",
+  "descriptions": "This is now the final submission item",
+  "isFinalSubmission": true
+}
+
+### 5.8 Update Module Item - Partial Update
+# Only update specific fields
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items/50000000-0000-0000-0000-000000000009
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "Only Title Updated"
+}
+
+### 5.9 Delete Module Item - Success (No Ongoing Enrollments)
+# Module 3, Item 2 (Docker Containerization)
+DELETE {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items/50000000-0000-0000-0000-00000000000a
+Authorization: Bearer {{managerToken}}
+
+### 5.10 Delete Module Item - Fail (Ongoing Enrollments)
+# Module 1, Item 1 (Setup Development Environment)
+# Expected: 400 Bad Request - Cannot delete items with ongoing enrollments
+DELETE {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001/items/50000000-0000-0000-0000-000000000001
+Authorization: Bearer {{managerToken}}
+
+### 5.11 Delete Module Item - Auto-assign Final Submission
+# If deleting item with isFinalSubmission=true, last item will auto-get it
+# Module 3, Item 3 (Final Microservices Project) - isFinalSubmission=true
+DELETE {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items/50000000-0000-0000-0000-00000000000b
+Authorization: Bearer {{managerToken}}
+
+### 5.12 Reorder Module Items - Success (No Ongoing Enrollments)
+# Must include ALL items in the module with sequential orderIndex (1,2,3...)
+# Module 3 has 3 items - reordering them
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items/reorder
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "itemOrders": [
+    { "itemId": "50000000-0000-0000-0000-00000000000b", "newOrderIndex": 1 },
+    { "itemId": "50000000-0000-0000-0000-000000000009", "newOrderIndex": 2 },
+    { "itemId": "50000000-0000-0000-0000-00000000000a", "newOrderIndex": 3 }
+  ]
+}
+
+### 5.13 Reorder Module Items - Fail (Ongoing Enrollments)
+# Module 1 has ongoing enrollments
+# Expected: 400 Bad Request - Cannot reorder items with ongoing enrollments
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001/items/reorder
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "itemOrders": [
+    { "itemId": "50000000-0000-0000-0000-000000000001", "newOrderIndex": 1 },
+    { "itemId": "50000000-0000-0000-0000-000000000002", "newOrderIndex": 2 }
+  ]
+}
+
+### 5.14 Reorder Module Items - Fail (Missing Items)
+# Expected: 400 Bad Request - Must include all items (Module 3 has 3 items)
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items/reorder
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "itemOrders": [
+    { "itemId": "50000000-0000-0000-0000-000000000009", "newOrderIndex": 1 }
+  ]
+}
+
+### 5.15 Reorder Module Items - Fail (Non-sequential OrderIndex)
+# Expected: 400 Bad Request - OrderIndex must be sequential (1,2,3...)
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items/reorder
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "itemOrders": [
+    { "itemId": "50000000-0000-0000-0000-000000000009", "newOrderIndex": 1 },
+    { "itemId": "50000000-0000-0000-0000-00000000000a", "newOrderIndex": 5 },
+    { "itemId": "50000000-0000-0000-0000-00000000000b", "newOrderIndex": 10 }
+  ]
+}
+
+### 5.16 Add Module Item as Employee (Should Fail - 403)
+POST {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003/items
+Content-Type: application/json
 Authorization: Bearer {{employeeToken}}
 
-### 5.2 Get Current Enrollment (Employee)
+{
+  "title": "Unauthorized Item",
+  "orderIndex": 1,
+  "isFinalSubmission": false
+}
+
+### 5.17 Update Module Item by Non-Creator (Should Fail - 403)
+# Only module creator can update items
+# Note: In seeder, all modules created by same manager, so this won't fail
+PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001/items/50000000-0000-0000-0000-000000000001
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "title": "This should fail if you didn't create this module"
+}
+
+###############################################
+# 6. ENROLLMENT MANAGEMENT (Employee)
+###############################################
+
+# ===== TEST DATA OVERVIEW =====
+# Employee 1 (employee@levelup.com - John): Ongoing Module 1 (33% progress, 1/3 items)
+# Employee 2 (employee2@levelup.com - Jessica): Ongoing Module 4 (66% progress) + Completed Module 2
+# Employee 3 (employee3@levelup.com - Christopher): Paused Module 5 (50% progress) + Completed Module 1
+# Employee 4 (employee4@levelup.com - Amanda): Completed Module 5 only (idle, no ongoing)
+# Employee 6 (employee6@levelup.com - Michael): Never enrolled (idle, no history)
+
+### 6.1 Get Current Enrollment - Employee with Ongoing Enrollment
+# Employee 1 (John) has ongoing enrollment in Module 1
+# Expected: 200 OK with enrollment details (Module 1, 33% progress)
 GET {{baseUrl}}/enrollments/current
 Authorization: Bearer {{employeeToken}}
 
-### 5.3 Get Enrollment History (Employee)
-GET {{baseUrl}}/enrollments/history
-Authorization: Bearer {{employeeToken}}
+### 6.2 Get Current Enrollment - Employee with No Active Enrollment
+# Employee 4 (Amanda) completed Module 5, no ongoing enrollment
+# Expected: 204 No Content
+GET {{baseUrl}}/enrollments/current
+Authorization: Bearer {{employee4Token}}
 
-### 5.4 Create Enrollment (Employee) - Replace {moduleId}
+### 6.3 Get Current Enrollment - Employee Never Enrolled
+# Employee 6 (Michael) has never enrolled in any module
+# Expected: 204 No Content
+GET {{baseUrl}}/enrollments/current
+Authorization: Bearer {{employee6Token}}
+
+### 6.4 Get Enrollment History - Employee with Multiple History
+# Employee 2 (Jessica) has completed Module 2 + ongoing Module 4
+# Expected: Returns history including completed enrollment
+GET {{baseUrl}}/enrollments/history
+Authorization: Bearer {{employee2Token}}
+
+### 6.5 Get Enrollment History - Employee with Paused & Completed
+# Employee 3 (Christopher) has paused Module 5 + completed Module 1
+# Expected: Returns both paused and completed enrollments
+GET {{baseUrl}}/enrollments/history
+Authorization: Bearer {{employee3Token}}
+
+### 6.6 Get Enrollment History - Employee with Only Completed
+# Employee 4 (Amanda) only has completed Module 5
+# Expected: Returns completed enrollment history
+GET {{baseUrl}}/enrollments/history
+Authorization: Bearer {{employee4Token}}
+
+### 6.7 Get Enrollment History - Employee Never Enrolled
+# Employee 6 (Michael) has never enrolled
+# Expected: Empty array []
+GET {{baseUrl}}/enrollments/history
+Authorization: Bearer {{employee6Token}}
+
+### 6.8 Get Enrollment History as Manager (Should Fail - 403)
+# Expected: 403 Forbidden - Only employees can access their history
+GET {{baseUrl}}/enrollments/history
+Authorization: Bearer {{managerToken}}
+
+### 6.9 Create Enrollment - Success (Never Enrolled Employee)
+# Employee 6 (Michael) enrolling in Module 1 for the first time
+# Expected: 201 Created with new enrollment details
+# Note: Use actual module ID from database (Module 1, 2, 4, or 5 - all active)
+POST {{baseUrl}}/enrollments
+Content-Type: application/json
+Authorization: Bearer {{employee6Token}}
+
+{
+  "moduleId": "40000000-0000-0000-0000-000000000001"
+}
+
+### 6.10 Create Enrollment - Success (Idle Employee with History)
+# Employee 4 (Amanda) has completed Module 5, now enrolling in new module
+# Expected: 201 Created
+POST {{baseUrl}}/enrollments
+Content-Type: application/json
+Authorization: Bearer {{employee4Token}}
+
+{
+  "moduleId": "40000000-0000-0000-0000-000000000002"
+}
+
+### 6.11 Create Enrollment - Already Has Active Enrollment (Should Fail - 400)
+# Employee 1 (John) already has ongoing enrollment in Module 1
+# Expected: 400 Bad Request - Employee already has an ongoing enrollment
 POST {{baseUrl}}/enrollments
 Content-Type: application/json
 Authorization: Bearer {{employeeToken}}
 
 {
-  "moduleId": "770e8400-e29b-41d4-a716-446655440000"
+  "moduleId": "40000000-0000-0000-0000-000000000002"
 }
 
-### 5.5 Resume Enrollment (Employee) - Replace {enrollmentId}
-POST {{baseUrl}}/enrollments/990e8400-e29b-41d4-a716-446655440000/resume
-Authorization: Bearer {{employeeToken}}
+### 6.12 Create Enrollment - Already Has Active Enrollment (Different Module)
+# Employee 2 (Jessica) already has ongoing enrollment in Module 4
+# Expected: 400 Bad Request - Cannot enroll in multiple modules simultaneously
+POST {{baseUrl}}/enrollments
+Content-Type: application/json
+Authorization: Bearer {{employee2Token}}
 
-### 5.6 Get Enrollment Progress - Replace {enrollmentId}
-GET {{baseUrl}}/enrollments/990e8400-e29b-41d4-a716-446655440000/progress
-Authorization: Bearer {{employeeToken}}
+{
+  "moduleId": "40000000-0000-0000-0000-000000000001"
+}
 
-### 5.7 Mark Item as Completed - Replace {enrollmentId}
-POST {{baseUrl}}/enrollments/990e8400-e29b-41d4-a716-446655440000/items
+### 6.13 Create Enrollment - Invalid Module ID (Should Fail - 404)
+# Expected: 404 Not Found - Module doesn't exist
+POST {{baseUrl}}/enrollments
+Content-Type: application/json
+Authorization: Bearer {{employee6Token}}
+
+{
+  "moduleId": "00000000-0000-0000-0000-000000000000"
+}
+
+### 6.14 Create Enrollment - Inactive Module (Should Fail - 400)
+# Module 3 (Microservices) is inactive
+# Expected: 400 Bad Request - Cannot enroll in inactive module
+POST {{baseUrl}}/enrollments
+Content-Type: application/json
+Authorization: Bearer {{employee6Token}}
+
+{
+  "moduleId": "40000000-0000-0000-0000-000000000003"
+}
+
+### 6.15 Submit Checklist Item - Success (First Item)
+# Employee 1 (John) completing 2nd item in Module 1 (Create First API)
+# Expected: 200 OK with updated enrollment progress (66%)
+# Use Module 1, Item 2 ID
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000001/items
 Content-Type: application/json
 Authorization: Bearer {{employeeToken}}
 
 {
-  "moduleItemId": "880e8400-e29b-41d4-a716-446655440000",
-  "feedback": "Successfully completed the async programming exercise",
-  "evidenceUrl": "https://github.com/user/async-project"
+  "moduleItemId": "50000000-0000-0000-0000-000000000003",
+  "evidenceUrl": "https://github.com/johndoe/first-api-project",
+  "feedback": "Successfully wakwaw"
 }
 
-### 5.8 Submit Final Work - Replace {enrollmentId}
-POST {{baseUrl}}/enrollments/990e8400-e29b-41d4-a716-446655440000/submit
+### 6.16 Submit Checklist Item - Without Optional Fields
+# Submit with only required moduleItemId
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000001/items
 Content-Type: application/json
 Authorization: Bearer {{employeeToken}}
 
 {
-  "submissionUrl": "https://github.com/user/final-project",
-  "notes": "Project completed with all requirements met"
+  "moduleItemId": "50000000-0000-0000-0000-000000000002"
 }
 
+### 6.17 Submit Checklist Item - Already Completed (Should Fail - 400)
+# Employee 1 (John) already completed Module 1, Item 1 (Setup Development)
+# Expected: 400 Bad Request - Item already marked as completed
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000001/items
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
+
+{
+  "moduleItemId": "50000000-0000-0000-0000-000000000001",
+  "evidenceUrl": "https://github.com/johndoe/duplicate-submission"
+}
+
+### 6.18 Submit Checklist Item - Wrong Enrollment (Should Fail - 403)
+# Employee 6 trying to submit for Employee 1's enrollment
+# Expected: 403 Forbidden - Cannot submit items for another employee's enrollment
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000001/items
+Content-Type: application/json
+Authorization: Bearer {{employee6Token}}
+
+{
+  "moduleItemId": "50000000-0000-0000-0000-000000000002",
+  "evidenceUrl": "https://github.com/employee6/unauthorized"
+}
+
+### 6.19 Submit Checklist Item - Item Not in Enrollment Module (Should Fail - 400)
+# Employee 1 (Module 1) trying to submit item from Module 2
+# Expected: 400 Bad Request - Item doesn't belong to this enrollment's module
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000001/items
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
+
+{
+  "moduleItemId": "50000000-0000-0000-0000-000000000004",
+  "evidenceUrl": "https://github.com/johndoe/wrong-module"
+}
+
+### 6.20 Get Enrollment Progress - Success (Ongoing Enrollment)
+# Employee 1 (John) checking progress in Module 1
+# Expected: 200 OK with 33% progress (1/3 items completed)
+GET {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000001/progress
+Authorization: Bearer {{employeeToken}}
+
+### 6.21 Get Enrollment Progress - Success (High Progress)
+# Employee 2 (Jessica) checking progress in Module 4
+# Expected: 200 OK with 66% progress (2/3 items completed)
+GET {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000003/progress
+Authorization: Bearer {{employee2Token}}
+
+### 6.22 Get Enrollment Progress - Wrong Employee (Should Fail - 403)
+# Employee 6 trying to view Employee 1's progress
+# Expected: 403 Forbidden - Cannot view another employee's progress
+GET {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000001/progress
+Authorization: Bearer {{employee6Token}}
+
+### 6.23 Get Enrollment Progress - Non-existent Enrollment (Should Fail - 404)
+# Expected: 404 Not Found
+GET {{baseUrl}}/enrollments/00000000-0000-0000-0000-000000000000/progress
+Authorization: Bearer {{employeeToken}}
+
+### 6.24 Get Enrollment Progress - Completed Enrollment
+# Employee 4 (Amanda) viewing completed Module 5 enrollment
+# Expected: 200 OK with 100% progress
+GET {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000007/progress
+Authorization: Bearer {{employee4Token}}
+
+### 6.25 Resume Enrollment - Success (Paused Enrollment)
+# Employee 3 (Christopher) resuming paused Module 5 enrollment
+# Expected: 200 OK - Enrollment status changed to OnGoing
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000004/resume
+Authorization: Bearer {{employee3Token}}
+
+### 6.26 Resume Enrollment - Already Active (Should Fail - 400)
+# Employee 1 (John) trying to resume already ongoing enrollment
+# Expected: 400 Bad Request - Enrollment is already ongoing
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000001/resume
+Authorization: Bearer {{employeeToken}}
+
+### 6.27 Resume Enrollment - Has Another Active Enrollment (Should Fail - 400)
+# Employee 3 trying to resume but already has an active enrollment
+# Expected: 400 Bad Request - Employee already has an active enrollment
+# Note: Only test this after Employee 3 resumed the paused enrollment
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000005/resume
+Authorization: Bearer {{employee3Token}}
+
+### 6.28 Resume Enrollment - Completed Enrollment (Should Fail - 400)
+# Employee 4 (Amanda) trying to resume completed Module 5
+# Expected: 400 Bad Request - Cannot resume completed enrollment
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000007/resume
+Authorization: Bearer {{employee4Token}}
+
+### 6.29 Resume Enrollment - Wrong Employee (Should Fail - 403)
+# Employee 6 trying to resume Employee 3's paused enrollment
+# Expected: 403 Forbidden
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000004/resume
+Authorization: Bearer {{employee6Token}}
+
+### 6.30 Resume Enrollment as Manager (Should Fail - 403)
+# Expected: 403 Forbidden - Only employees can resume enrollments
+POST {{baseUrl}}/enrollments/60000000-0000-0000-0000-000000000004/resume
+Authorization: Bearer {{managerToken}}
+
 ###############################################
-# 6. SUBMISSION MANAGEMENT (Manager)
+# 7. SUBMISSION MANAGEMENT (Manager)
 ###############################################
 
-### 6.1 Get All Submissions (Manager)
+### 7.1 Get All Submissions (Manager)
 GET {{baseUrl}}/submissions
 Authorization: Bearer {{managerToken}}
 
-### 6.2 Get Submissions with Filter
+### 7.2 Get Submissions with Filter
 GET {{baseUrl}}/submissions?page=1&limit=10&status=Pending
 Authorization: Bearer {{managerToken}}
 
-### 6.3 Review Submission - Replace {submissionId}
+### 7.3 Review Submission - Replace {submissionId}
 POST {{baseUrl}}/submissions/bb0e8400-e29b-41d4-a716-446655440000/review
 Content-Type: application/json
 Authorization: Bearer {{managerToken}}
@@ -327,7 +866,7 @@ Authorization: Bearer {{managerToken}}
   "feedback": "Excellent work! All requirements met and code quality is outstanding."
 }
 
-### 6.4 Reject Submission - Replace {submissionId}
+### 7.4 Reject Submission - Replace {submissionId}
 POST {{baseUrl}}/submissions/bb0e8400-e29b-41d4-a716-446655440000/review
 Content-Type: application/json
 Authorization: Bearer {{managerToken}}
@@ -338,27 +877,55 @@ Authorization: Bearer {{managerToken}}
 }
 
 ###############################################
-# 7. MANAGER DASHBOARD (Manager)
+# 8. MANAGER DASHBOARD (Manager)
 ###############################################
 
-### 7.1 Get Dashboard Summary (Manager)
-GET {{baseUrl}}/manager/dashboard
+### 8.1 Get Dashboard Summary - Success (Manager)
+# Returns dashboard statistics including total employees, idle count, enrollments, etc.
+GET {{baseUrl}}/dashboard/manager/dashboard
 Authorization: Bearer {{managerToken}}
 
-### 7.2 Get Managed Employees (Manager)
-GET {{baseUrl}}/manager/employees
+### 8.2 Get Dashboard Summary as Employee (Should Fail - 403)
+# Expected: 403 Forbidden - Only managers can access dashboard
+GET {{baseUrl}}/dashboard/manager/dashboard
+Authorization: Bearer {{employeeToken}}
+
+### 8.3 Get Dashboard Summary as Admin (Should Fail - 403)
+# Expected: 403 Forbidden - Only managers role allowed
+GET {{baseUrl}}/dashboard/manager/dashboard
+Authorization: Bearer {{adminToken}}
+
+### 8.4 Get Dashboard Summary without Token (Should Fail - 401)
+GET {{baseUrl}}/dashboard/manager/dashboard
+
+### 8.5 Get All Employees List - Success (Manager)
+# Returns list of all employees with their enrollment information
+GET {{baseUrl}}/dashboard/manager/employees
 Authorization: Bearer {{managerToken}}
 
-### 7.3 Get Managed Employees with Filter
-GET {{baseUrl}}/manager/employees?page=1&limit=10&isIdle=false
+### 8.6 Get All Employees as Employee (Should Fail - 403)
+GET {{baseUrl}}/dashboard/manager/employees
+Authorization: Bearer {{employeeToken}}
+
+### 8.7 Get Employee Detail - Success (Manager)
+# Replace {employeeId} with actual employee ID from your database
+# Returns detailed info: personal data, current enrollment, progress, history
+GET {{baseUrl}}/dashboard/manager/employees/30000000-0000-0000-0000-000000000003/detail
 Authorization: Bearer {{managerToken}}
 
-### 7.4 Get Employee Details - Replace {employeeId}
-GET {{baseUrl}}/manager/employees/cc0e8400-e29b-41d4-a716-446655440000/detail
+### 8.8 Get Employee Detail - Non-existent Employee (Should Fail - 404)
+# Expected: 404 Not Found - Employee doesn't exist
+GET {{baseUrl}}/dashboard/manager/employees/00000000-0000-0000-0000-000000000000/detail
 Authorization: Bearer {{managerToken}}
 
-### 7.5 Update Employee Status - Replace {employeeId}
-PATCH {{baseUrl}}/manager/employees/cc0e8400-e29b-41d4-a716-446655440000/status
+### 8.9 Get Employee Detail as Employee (Should Fail - 403)
+GET {{baseUrl}}/dashboard/manager/employees/30000000-0000-0000-0000-000000000003/detail
+Authorization: Bearer {{employeeToken}}
+
+### 8.10 Update Employee Status to Idle - Success (Manager)
+# Replace {employeeId} with actual employee ID
+# Sets employee as idle (available for new enrollment)
+PATCH {{baseUrl}}/dashboard/employee/30000000-0000-0000-0000-000000000003/status
 Content-Type: application/json
 Authorization: Bearer {{managerToken}}
 
@@ -366,15 +933,65 @@ Authorization: Bearer {{managerToken}}
   "isIdle": true
 }
 
+### 8.11 Update Employee Status to Active - Success (Manager)
+# Sets employee as active (currently working on tasks)
+PATCH {{baseUrl}}/dashboard/employee/30000000-0000-0000-0000-000000000003/status
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "isIdle": false
+}
+
+### 8.12 Update Employee Status - Non-existent Employee (Should Fail - 400)
+# Expected: 400 Bad Request - Employee not found
+PATCH {{baseUrl}}/dashboard/employee/00000000-0000-0000-0000-000000000000/status
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "isIdle": true
+}
+
+### 8.13 Update Employee Status as Employee (Should Fail - 403)
+PATCH {{baseUrl}}/dashboard/employee/30000000-0000-0000-0000-000000000003/status
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
+
+{
+  "isIdle": true
+}
+
+### 8.14 Update Employee Status - Missing Required Field (Should Fail - 400)
+# Expected: 400 Bad Request - isIdle field required
+PATCH {{baseUrl}}/dashboard/employee/30000000-0000-0000-0000-000000000003/status
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+}
+
+### 8.15 Get Manager's Enrollments - Success (Manager)
+# Returns all enrollments for employees under this manager
+GET {{baseUrl}}/dashboard/manager/enrollments
+Authorization: Bearer {{managerToken}}
+
+### 8.16 Get Manager's Enrollments as Employee (Should Fail - 403)
+GET {{baseUrl}}/dashboard/manager/enrollments
+Authorization: Bearer {{employeeToken}}
+
+### 8.17 Get Manager's Enrollments without Token (Should Fail - 401)
+GET {{baseUrl}}/dashboard/manager/enrollments
+
 ###############################################
-# 8. ERROR SCENARIOS
+# 9. ERROR SCENARIOS
 ###############################################
 
-### 8.1 Invalid Endpoint (404)
+### 9.1 Invalid Endpoint (404)
 GET {{baseUrl}}/invalid-endpoint
 Authorization: Bearer {{adminToken}}
 
-### 8.2 Malformed JSON (400)
+### 9.2 Malformed JSON (400)
 POST {{baseUrl}}/users
 Content-Type: application/json
 Authorization: Bearer {{adminToken}}
@@ -387,7 +1004,7 @@ Authorization: Bearer {{adminToken}}
   "role": "InvalidRole"
 }
 
-### 8.3 Missing Required Fields (400)
+### 9.3 Missing Required Fields (400)
 POST {{baseUrl}}/users
 Content-Type: application/json
 Authorization: Bearer {{adminToken}}
@@ -396,7 +1013,7 @@ Authorization: Bearer {{adminToken}}
   "firstName": "Test"
 }
 
-### 8.4 Duplicate Email (409)
+### 9.4 Duplicate Email (409)
 POST {{baseUrl}}/users
 Content-Type: application/json
 Authorization: Bearer {{adminToken}}
@@ -410,7 +1027,7 @@ Authorization: Bearer {{adminToken}}
   "positionId": null
 }
 
-### 8.5 Non-existent Resource (404)
+### 9.5 Non-existent Resource (404)
 GET {{baseUrl}}/users/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{adminToken}}
 
