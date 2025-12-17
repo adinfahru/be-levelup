@@ -20,54 +20,54 @@ public class SubmissionService : ISubmissionService
     // GET LIST SUBMISSIONS (MANAGER)
     // ===============================
     public async Task<IEnumerable<SubmissionListResponse>> GetSubmissionsAsync(Guid managerId)
-{
-    var submissions = await _context.Submissions
-        .Include(s => s.Enrollment!)
-            .ThenInclude(e => e.Items)
-        .Include(s => s.Enrollment!)
-            .ThenInclude(e => e.Module!)
-                .ThenInclude(m => m.Items)
-        .Include(s => s.Enrollment!)
-            .ThenInclude(e => e.Account!)
-                .ThenInclude(a => a.Employee)
-        .Where(s =>
-            // 🔒 FILTER MANAGER (INI KUNCI UTAMA)
-            s.Enrollment!.Module!.CreatedBy == managerId
-
-            // ✅ Enrollment selesai
-            && s.Enrollment.Items.All(ei => ei.IsCompleted)
-
-            // ✅ Module punya final submission
-            && s.Enrollment.Module.Items.Any(mi => mi.IsFinalSubmission)
-        )
-        .OrderByDescending(s => s.CreatedAt)
-        .ToListAsync();
-
-    return submissions.Select(s =>
     {
-        var completedCount = s.Enrollment!.Items.Count(ei => ei.IsCompleted);
-        var totalCount = s.Enrollment.Module!.Items.Count;
+        var submissions = await _context.Submissions
+            .Include(s => s.Enrollment!)
+                .ThenInclude(e => e.Items)
+            .Include(s => s.Enrollment!)
+                .ThenInclude(e => e.Module!)
+                    .ThenInclude(m => m.Items)
+            .Include(s => s.Enrollment!)
+                .ThenInclude(e => e.Account!)
+                    .ThenInclude(a => a.Employee)
+            .Where(s =>
+                // 🔒 FILTER MANAGER (INI KUNCI UTAMA)
+                s.Enrollment!.Module!.CreatedBy == managerId
 
-        return new SubmissionListResponse(
-            SubmissionId: s.Id,
-            EnrollmentId: s.EnrollmentId,
+                // ✅ Enrollment selesai
+                && s.Enrollment.Items.All(ei => ei.IsCompleted)
 
-            EmployeeId: s.Enrollment.Account!.Employee!.Id,
-            EmployeeName:
-                $"{s.Enrollment.Account.Employee.FirstName} {s.Enrollment.Account.Employee.LastName}",
-            Email: s.Enrollment.Account.Email!,
+                // ✅ Module punya final submission
+                && s.Enrollment.Module.Items.Any(mi => mi.IsFinalSubmission)
+            )
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
 
-            ModuleId: s.Enrollment.Module!.Id,
-            ModuleTitle: s.Enrollment.Module.Title!,
+        return submissions.Select(s =>
+        {
+            var completedCount = s.Enrollment!.Items.Count(ei => ei.IsCompleted);
+            var totalCount = s.Enrollment.Module!.Items.Count;
 
-            CompletedCount: completedCount,
-            TotalCount: totalCount,
+            return new SubmissionListResponse(
+                SubmissionId: s.Id,
+                EnrollmentId: s.EnrollmentId,
 
-            Status: s.Status.ToString(),
-            SubmittedAt: s.CreatedAt
-        );
-    });
-}
+                EmployeeId: s.Enrollment.Account!.Employee!.Id,
+                EmployeeName:
+                    $"{s.Enrollment.Account.Employee.FirstName} {s.Enrollment.Account.Employee.LastName}",
+                Email: s.Enrollment.Account.Email!,
+
+                ModuleId: s.Enrollment.Module!.Id,
+                ModuleTitle: s.Enrollment.Module.Title!,
+
+                CompletedCount: completedCount,
+                TotalCount: totalCount,
+
+                Status: s.Status.ToString(),
+                SubmittedAt: s.CreatedAt
+            );
+        });
+    }
 
 
     // ===============================
@@ -142,11 +142,11 @@ public class SubmissionService : ISubmissionService
     // ===============================
     // APPROVE / REJECT SUBMISSION
     // ===============================
-  public async Task<SubmissionReviewResponse> ReviewSubmissionAsync(
-        Guid submissionId,
-        Guid managerId,
-        SubmissionReviewRequest request
-    )
+    public async Task<SubmissionReviewResponse> ReviewSubmissionAsync(
+          Guid submissionId,
+          Guid managerId,
+          SubmissionReviewRequest request
+      )
     {
         var submission = await _context.Submissions
             .Include(s => s.Enrollment!)
@@ -199,6 +199,13 @@ public class SubmissionService : ISubmissionService
         submission.Status = parsedStatus;
         submission.ManagerFeedback = request.ManagerFeedback;
         submission.EstimatedDays = request.EstimatedDays;
+
+        // If submission is approved, mark enrollment as Completed
+        if (parsedStatus == SubmissionStatus.Approved)
+        {
+            submission.Enrollment.Status = EnrollmentStatus.Completed;
+            submission.Enrollment.CompletedDate = DateTime.UtcNow;
+        }
 
         await _context.SaveChangesAsync();
 
