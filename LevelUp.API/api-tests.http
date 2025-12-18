@@ -2,10 +2,14 @@
 # Install "REST Client" extension in VS Code to run these tests
 # Click "Send Request" above each request to test
 
-@baseUrl = http://localhost:5067/api/v1
-<<<<<<< HEAD
-=======
+# LevelUp API Tests
+# Install "REST Client" extension in VS Code to run these tests
+# Click "Send Request" above each request to test
 
+@baseUrl = http://localhost:5067/api/v1
+
+###############################################
+# FIXED GUID REFERENCE
 ###############################################
 # FIXED GUID REFERENCE
 ###############################################

@@ -212,15 +212,18 @@ public class EnrollmentService : IEnrollmentService
             {
                 var enrollmodule = await _moduleRepository.GetByIdWithCreatorAsync(enrollment.ModuleId, cancellationToken);
 
-                await _emailHandler.EmailAsync(new EmailDto(
-                    enrollmodule.Creator.Email!,
-                    isResubmission
-                        ? "Submission Resubmitted"
-                        : "New Final Submission",
-                    isResubmission
-                        ? $"<p>The final submission for <b>{enrollmodule.Title}</b> has been resubmitted and is ready for review.</p>"
-                        : $"<p>A new final submission for <b>{enrollmodule.Title}</b> has been submitted and requires your review.</p>"
-                ));
+                if (enrollmodule?.Creator?.Email != null)
+                {
+                    await _emailHandler.EmailAsync(new EmailDto(
+                        enrollmodule.Creator.Email,
+                        isResubmission
+                            ? "Submission Resubmitted"
+                            : "New Final Submission",
+                        isResubmission
+                            ? $"<p>The final submission for <b>{enrollmodule.Title}</b> has been resubmitted and is ready for review.</p>"
+                            : $"<p>A new final submission for <b>{enrollmodule.Title}</b> has been submitted and requires your review.</p>"
+                    ));
+                }
             }
             catch (Exception ex)
             {

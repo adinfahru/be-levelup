@@ -8,8 +8,5 @@ public interface IModuleRepository : IRepository<Module>
     Task<int> CountModulesOwnedByManager(Guid managerId);
     Task<int> CountEnrolledEmployeesByManager(Guid managerId);
     Task<IEnumerable<Module>> GetModulesByEmployeeId(Guid employeeId);
-<<<<<<< HEAD
-    Task<Module?> GetByIdWithCreatorAsync(Guid moduleId,CancellationToken cancellationToken);
-=======
->>>>>>> a6b2cda05dcc2b16f6a90d571942684856453441
+    Task<Module?> GetByIdWithCreatorAsync(Guid moduleId, CancellationToken cancellationToken);
 }
