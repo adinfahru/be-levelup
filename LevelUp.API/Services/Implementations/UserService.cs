@@ -23,6 +23,10 @@ public class UserService : IUserService
 
     public async Task CreateAccountAsync(UserRequest request, CancellationToken cancellationToken)
     {
+        // Validate password is required for create
+        if (string.IsNullOrEmpty(request.Password))
+            throw new InvalidOperationException("Password is required when creating a new account");
+
         // Validate position if provided
         if (request.PositionId.HasValue)
         {
@@ -123,6 +127,23 @@ public class UserService : IUserService
 
         // Soft delete account
         account.IsActive = false;
+
+        await _unitOfWork.CommitTransactionAsync(async () =>
+        {
+            await _accountRepository.UpdateAsync(account);
+        }, cancellationToken);
+    }
+
+    public async Task ActivateAccountAsync(Guid accountId, CancellationToken cancellationToken)
+    {
+        var account = await _accountRepository.GetByIdAsync(accountId, cancellationToken);
+
+        if (account == null)
+            throw new Exception("Account not found");
+
+        // Activate account
+        account.IsActive = true;
+        account.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.CommitTransactionAsync(async () =>
         {

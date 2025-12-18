@@ -158,6 +158,35 @@ Authorization: Bearer {{adminToken}}
   "newPassword": "NewAdmin123!"
 }
 
+### 1.6 Request Password Change (Send OTP)
+# @name requestPasswordOtp
+POST {{baseUrl}}/auth/password/request
+Content-Type: application/json
+
+{
+  "email": "employee@levelup.com"
+}
+
+### 1.7 Confirm Password Change (Use OTP)
+# @name confirmPasswordOtp
+POST {{baseUrl}}/auth/password/confirm
+Content-Type: application/json
+
+{
+  "email": "employee@levelup.com",
+  "otp": "123456",
+  "newPassword": "NewEmployee123!"
+}
+
+### 1.8 Resend Password OTP
+# Optional - server may rate-limit
+POST {{baseUrl}}/auth/password/request
+Content-Type: application/json
+
+{
+  "email": "employee@levelup.com"
+}
+
 ###############################################
 # 2. USER MANAGEMENT (Admin Only)
 ###############################################
