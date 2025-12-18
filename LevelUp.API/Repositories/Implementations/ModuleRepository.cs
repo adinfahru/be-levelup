@@ -16,9 +16,13 @@ public class ModuleRepository : Repository<Module>, IModuleRepository
         return await _context.Modules
             .Include(m => m.Items)
             .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+<<<<<<< HEAD
     }
 
     public async Task<int> CountModulesOwnedByManager(Guid managerId)
+=======
+     public async Task<int> CountModulesOwnedByManager(Guid managerId)
+>>>>>>> a6b2cda05dcc2b16f6a90d571942684856453441
     {
         return await _context.Modules
             .CountAsync(m => m.CreatedBy == managerId);
@@ -39,6 +43,7 @@ public class ModuleRepository : Repository<Module>, IModuleRepository
             .Where(m => m.Enrollments.Any(e => e.AccountId == employeeId))
             .Include(m => m.Enrollments)
             .ToListAsync();
+<<<<<<< HEAD
     }
 
     public async Task<Module?> GetByIdWithCreatorAsync(
@@ -48,6 +53,8 @@ public class ModuleRepository : Repository<Module>, IModuleRepository
         return await _context.Modules
             .Include(m => m.Creator)
             .FirstOrDefaultAsync(m => m.Id == moduleId, cancellationToken);
+=======
+>>>>>>> a6b2cda05dcc2b16f6a90d571942684856453441
     }
 
 }
