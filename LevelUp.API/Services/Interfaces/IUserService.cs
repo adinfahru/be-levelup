@@ -8,6 +8,7 @@ public interface IUserService
     Task CreateAccountAsync(UserRequest request, CancellationToken cancellationToken);
     Task UpdateAccountAsync(Guid accountId, UserRequest request, CancellationToken cancellationToken);
     Task DeleteAccountAsync(Guid accountId, CancellationToken cancellationToken);
+    Task ActivateAccountAsync(Guid accountId, CancellationToken cancellationToken);
     Task<(IEnumerable<UserResponse> items, int total)> GetAllAccountsAsync(
         int page,
         int limit,

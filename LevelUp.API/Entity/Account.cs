@@ -10,7 +10,11 @@ namespace LevelUp.API.Entity
         public string? Email { get; set; }
         public string? PasswordHash { get; set; }
         public UserRole Role { get; set; }
-        public int? Otp { get; set; }
+        // OTP fields for password change flow
+        // Store hashed OTP using existing bcrypt implementation
+        public string? OtpHash { get; set; }
+        public DateTime? OtpExpiresAt { get; set; }
+        public int OtpAttempts { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

@@ -38,28 +38,28 @@ public class EmailHandler : IEmailHandler
     }
 
     public async Task EmailAsync(EmailDto emailDto)
-{
-    try
     {
-        // Console.WriteLine("SMTP: preparing email");
-
-        var email = new MimeMessage();
-        email.From.Add(MailboxAddress.Parse(_mailFrom));
-        email.To.Add(MailboxAddress.Parse(emailDto.To));
-        email.Subject = emailDto.Subject;
-
-        email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
+        try
         {
-            Text = emailDto.Body
-        };
+            // Console.WriteLine("SMTP: preparing email");
 
-        using var smtp = new SmtpClient();
+            var email = new MimeMessage();
+            email.From.Add(MailboxAddress.Parse(_mailFrom));
+            email.To.Add(MailboxAddress.Parse(emailDto.To));
+            email.Subject = emailDto.Subject;
 
-        // Console.WriteLine($"SMTP: connecting {_smtpServer}:{_smtpPort}");
-        await smtp.ConnectAsync(_smtpServer, _smtpPort, SecureSocketOptions.None);
+            email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
+            {
+                Text = emailDto.Body
+            };
 
-        // Console.WriteLine("SMTP: sending email");
-        await smtp.SendAsync(email);
+            using var smtp = new SmtpClient();
+
+            // Console.WriteLine($"SMTP: connecting {_smtpServer}:{_smtpPort}");
+            await smtp.ConnectAsync(_smtpServer, _smtpPort, SecureSocketOptions.None);
+
+            // Console.WriteLine("SMTP: sending email");
+            await smtp.SendAsync(email);
 
         await smtp.DisconnectAsync(true);
         // Console.WriteLine("SMTP: email sent");
