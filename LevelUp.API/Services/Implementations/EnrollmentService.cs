@@ -2,6 +2,7 @@ using LevelUp.API.DTOs.Enrolls;
 using LevelUp.API.Entity;
 using LevelUp.API.Repositories.Interfaces;
 using LevelUp.API.Services.Interfaces;
+using LevelUp.API.Utilities;
 
 namespace LevelUp.API.Services.Implementations;
 
@@ -10,27 +11,29 @@ public class EnrollmentService : IEnrollmentService
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IModuleRepository _moduleRepository;
-    private readonly IModuleItemRepository _moduleItemRepository;
-    private readonly IAccountRepository _accountRepository;
+    private readonly ISubmissionRepository _submissionRepository;
     private readonly IEmployeeRepository _employeeRepository;
     private readonly IEnrollmentItemRepository _enrollmentItemRepository;
+    private readonly IEmailHandler _emailHandler;
 
     public EnrollmentService(
         IEnrollmentRepository enrollmentRepository,
         IUnitOfWork unitOfWork,
         IModuleRepository moduleRepository,
         IModuleItemRepository moduleItemRepository,
+        ISubmissionRepository submissionRepository,
         IAccountRepository accountRepository,
         IEnrollmentItemRepository enrollmentItemRepository,
-        IEmployeeRepository employeeRepository)
+        IEmployeeRepository employeeRepository,
+        IEmailHandler emailHandler)
     {
         _enrollmentRepository = enrollmentRepository;
         _unitOfWork = unitOfWork;
         _moduleRepository = moduleRepository;
-        _moduleItemRepository = moduleItemRepository;
-        _accountRepository = accountRepository;
         _enrollmentItemRepository = enrollmentItemRepository;
         _employeeRepository = employeeRepository;
+        _submissionRepository = submissionRepository;
+        _emailHandler = emailHandler;
     }
 
     public async Task<EnrollmentResponse> GetEnrollmentProgressAsync(
@@ -151,7 +154,8 @@ public class EnrollmentService : IEnrollmentService
                 "Checklist must be completed in order");
 
         // 7. Final submission wajib evidence
-        if (nextItem.ModuleItem.IsFinalSubmission &&
+        if (nextItem.ModuleItem != null &&
+            nextItem.ModuleItem.IsFinalSubmission &&
             string.IsNullOrWhiteSpace(request.EvidenceUrl))
         {
             throw new InvalidOperationException(
@@ -164,6 +168,63 @@ public class EnrollmentService : IEnrollmentService
         nextItem.Feedback = request.Feedback;
         nextItem.CompletedAt = DateTime.UtcNow;
 
+        // 8.5 HANDLE FINAL SUBMISSION (CREATE / RESUBMIT)
+        // 8.5 HANDLE FINAL SUBMISSION (CREATE / RESUBMIT)
+        if (nextItem.ModuleItem!.IsFinalSubmission)
+        {
+            var submission = await _submissionRepository
+                .GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
+
+            var isResubmission = false;
+
+            if (submission == null)
+            {
+                // 🆕 first time final submission
+                submission = new Submission
+                {
+                    Id = Guid.NewGuid(),
+                    EnrollmentId = enrollment.Id,
+                    Status = SubmissionStatus.Pending,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _submissionRepository.CreateAsync(submission, cancellationToken);
+            }
+            else if (submission.Status == SubmissionStatus.Rejected)
+            {
+                // 🔁 resubmission after rejected
+                submission.Status = SubmissionStatus.Pending;
+                submission.ManagerFeedback = null;
+                submission.EstimatedDays = null;
+                submission.UpdatedAt = DateTime.UtcNow;
+
+                isResubmission = true;
+
+                await _submissionRepository.UpdateAsync(submission);
+            }
+
+            try
+            {
+                var enrollmodule = await _moduleRepository.GetByIdWithCreatorAsync(enrollment.ModuleId, cancellationToken);
+
+                await _emailHandler.EmailAsync(new EmailDto(
+                    enrollmodule.Creator.Email!,
+                    isResubmission
+                        ? "Submission Resubmitted"
+                        : "New Final Submission",
+                    isResubmission
+                        ? $"<p>The final submission for <b>{enrollmodule.Title}</b> has been resubmitted and is ready for review.</p>"
+                        : $"<p>A new final submission for <b>{enrollmodule.Title}</b> has been submitted and requires your review.</p>"
+                ));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("EMAIL FAILED:");
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+
         // 9. Update progress
         var completedCount = orderedItems.Count(i => i.IsCompleted);
         var totalCount = orderedItems.Count;
@@ -174,7 +235,8 @@ public class EnrollmentService : IEnrollmentService
         // 10. Penentuan status enrollment
         if (completedCount == totalCount)
         {
-            if (!nextItem.ModuleItem.IsFinalSubmission)
+            if (nextItem.ModuleItem != null &&
+                !nextItem.ModuleItem.IsFinalSubmission)
             {
                 enrollment.Status = EnrollmentStatus.Completed;
                 enrollment.CompletedDate = DateTime.UtcNow;
@@ -225,7 +287,6 @@ public class EnrollmentService : IEnrollmentService
             Sections: sections
         );
     }
-
 
     public async Task<EnrollmentResponse> EnrollAsync(
     Guid accountId,
@@ -341,44 +402,36 @@ public class EnrollmentService : IEnrollmentService
     Guid accountId,
     CancellationToken cancellationToken)
     {
-        // 1. Ambil employee berdasarkan accountId (JWT source of truth)
+        // 1. Ambil employee
         var employee = await _employeeRepository
             .GetByAccountIdAsync(accountId, cancellationToken)
             ?? throw new InvalidOperationException("Employee not found");
 
-        // 2. Ambil enrollment aktif (OnGoing)
-        var activeEnrollment = await _enrollmentRepository
+        // 2. Ambil enrollment current (OnGoing / Paused / WaitingReview)
+        var enrollment = await _enrollmentRepository
             .GetActiveByUserIdAsync(accountId, cancellationToken);
 
-        // 3. Jika employee tidak idle → auto pause
-        if (!employee.IsIdle)
-        {
-            if (activeEnrollment is not null &&
-                activeEnrollment.Status == EnrollmentStatus.OnGoing)
-            {
-                activeEnrollment.Status = EnrollmentStatus.Paused;
-                activeEnrollment.UpdatedAt = DateTime.UtcNow;
-
-                await _enrollmentRepository.UpdateAsync(activeEnrollment);
-            }
-
-            return null; // learning disembunyikan
-        }
-
-        // 4. Idle tapi tidak ada enrollment aktif
-        if (activeEnrollment is null)
+        if (enrollment is null)
             return null;
 
-        // 5. Ambil module
+        // 3. Auto-pause kalau employee tidak idle
+        if (!employee.IsIdle && enrollment.Status == EnrollmentStatus.OnGoing)
+        {
+            enrollment.Status = EnrollmentStatus.Paused;
+            enrollment.UpdatedAt = DateTime.UtcNow;
+
+            await _enrollmentRepository.UpdateAsync(enrollment);
+        }
+
+        // 4. Ambil module
         var module = await _moduleRepository
-            .GetByIdAsync(activeEnrollment.ModuleId, cancellationToken)
+            .GetByIdAsync(enrollment.ModuleId, cancellationToken)
             ?? throw new InvalidOperationException("Module not found");
 
-        // 6. Ambil enrollment items
+        // 5. Ambil enrollment items
         var enrollmentItems = await _enrollmentItemRepository
-            .GetByEnrollmentIdAsync(activeEnrollment.Id, cancellationToken);
+            .GetByEnrollmentIdAsync(enrollment.Id, cancellationToken);
 
-        // 7. Mapping sections
         var sections = enrollmentItems
             .OrderBy(ei => ei.ModuleItem!.OrderIndex)
             .Select(ei => new EnrollmentItemDto(
@@ -395,17 +448,17 @@ public class EnrollmentService : IEnrollmentService
             ))
             .ToList();
 
-        // 8. Return response
+        // 6. Return ke FE (PAUSED TETAP DIKIRIM)
         return new EnrollmentResponse(
-            EnrollmentId: activeEnrollment.Id,
+            EnrollmentId: enrollment.Id,
             ModuleId: module.Id,
             ModuleTitle: module.Title!,
             ModuleDescription: module.Description!,
-            StartDate: activeEnrollment.StartDate,
-            TargetDate: activeEnrollment.TargetDate,
-            CompletedDate: activeEnrollment.CompletedDate,
-            Status: activeEnrollment.Status,
-            CurrentProgress: activeEnrollment.CurrentProgress,
+            StartDate: enrollment.StartDate,
+            TargetDate: enrollment.TargetDate,
+            CompletedDate: enrollment.CompletedDate,
+            Status: enrollment.Status,
+            CurrentProgress: enrollment.CurrentProgress,
             Sections: sections
         );
     }

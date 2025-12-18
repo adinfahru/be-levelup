@@ -1,3 +1,4 @@
+using LevelUp.API.DTOs.ModuleItems;
 using LevelUp.API.DTOs.Modules;
 using LevelUp.API.Services.Interfaces;
 using LevelUp.API.Utilities;
@@ -54,6 +55,14 @@ public class ModulesController : ControllerBase
         return Ok(new ApiResponse<ModuleDetailResponse>(module));
     }
 
+    [HttpGet("{moduleId}/enrollments")]
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> GetModuleEnrollments(Guid moduleId)
+    {
+        var enrollments = await _moduleService.GetModuleEnrollmentsAsync(moduleId);
+        return Ok(new ApiResponse<List<ModuleEnrollmentUserResponse>>(enrollments));
+    }
+
     [HttpPost]
     [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Create([FromBody] CreateModuleRequest request)
@@ -78,5 +87,56 @@ public class ModulesController : ControllerBase
             throw new NullReferenceException("Module not found");
 
         return Ok(new ApiResponse<ModuleResponse>(module));
+    }
+
+    // ============= MODULE ITEMS ENDPOINTS =============
+
+    [HttpPost("{moduleId}/items")]
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> AddItem(Guid moduleId, [FromBody] CreateModuleItemRequest request)
+    {
+        var creatorId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty);
+        var item = await _moduleService.AddItemAsync(moduleId, request, creatorId);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = moduleId },
+            new ApiResponse<ModuleItemResponse>(StatusCodes.Status201Created, "Module item added successfully", item));
+    }
+
+    [HttpPut("{moduleId}/items/{itemId}")]
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> UpdateItem(Guid moduleId, Guid itemId, [FromBody] UpdateModuleItemRequest request)
+    {
+        var creatorId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty);
+        var item = await _moduleService.UpdateItemAsync(moduleId, itemId, request, creatorId);
+
+        if (item == null)
+            throw new NullReferenceException("Module item not found");
+
+        return Ok(new ApiResponse<ModuleItemResponse>(StatusCodes.Status200OK, "Module item updated successfully", item));
+    }
+
+    [HttpDelete("{moduleId}/items/{itemId}")]
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> DeleteItem(Guid moduleId, Guid itemId)
+    {
+        var creatorId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty);
+        var result = await _moduleService.DeleteItemAsync(moduleId, itemId, creatorId);
+
+        if (!result)
+            throw new NullReferenceException("Module item not found");
+
+        return Ok(new ApiResponse<object>(StatusCodes.Status200OK, "Module item deleted successfully", null));
+    }
+
+    [HttpPut("{moduleId}/items/reorder")]
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> ReorderItems(Guid moduleId, [FromBody] ReorderModuleItemsRequest request)
+    {
+        var creatorId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty);
+        var items = await _moduleService.ReorderItemsAsync(moduleId, request, creatorId);
+
+        return Ok(new ApiResponse<List<ModuleItemResponse>>(StatusCodes.Status200OK, "Module items reordered successfully", items));
     }
 }
