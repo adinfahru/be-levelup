@@ -2,7 +2,6 @@ using LevelUp.API.DTOs.Auth;
 using LevelUp.API.Repositories.Interfaces;
 using LevelUp.API.Services.Interfaces;
 using LevelUp.API.Utilities;
-using MentorHub.API.Utilities;
 
 namespace LevelUp.API.Services.Implementations;
 
@@ -13,19 +12,22 @@ public class AuthService : IAuthService
   private readonly IJwtTokenHandler _jwtTokenHandler;
   private readonly IConfiguration _configuration;
   private readonly IEmailHandler _emailHandler;
+  private readonly IUnitOfWork _unitOfWork;
 
   public AuthService(
       IAccountRepository accountRepository,
       IHashHandler hashHandler,
       IJwtTokenHandler jwtTokenHandler,
       IConfiguration configuration,
-      IEmailHandler emailHandler)
+      IEmailHandler emailHandler,
+      IUnitOfWork unitOfWork)
   {
     _accountRepository = accountRepository;
     _hashHandler = hashHandler;
     _jwtTokenHandler = jwtTokenHandler;
     _configuration = configuration;
     _emailHandler = emailHandler;
+    _unitOfWork = unitOfWork;
   }
 
   public async Task<LoginResponse?> LoginAsync(LoginRequest request)
@@ -65,13 +67,16 @@ public class AuthService : IAuthService
     account.OtpAttempts = 0;
     account.UpdatedAt = DateTime.UtcNow;
 
-    await _accountRepository.UpdateAsync(account);
+    await _unitOfWork.CommitTransactionAsync(async () =>
+    {
+      await _accountRepository.UpdateAsync(account);
+    }, CancellationToken.None);
 
     // send email
     try
     {
       var body = $"<p>Your OTP code is: <b>{otp}</b></p><p>Expires in 15 minutes.</p>";
-      await _emailHandler.EmailAsync(new MentorHub.API.Utilities.EmailDto(account.Email!, "Password Change OTP", body));
+      await _emailHandler.EmailAsync(new LevelUp.API.Utilities.EmailDto(account.Email!, "Password Change OTP", body));
     }
     catch
     {
@@ -98,7 +103,10 @@ public class AuthService : IAuthService
     if (!valid)
     {
       account.OtpAttempts += 1;
-      await _accountRepository.UpdateAsync(account);
+      await _unitOfWork.CommitTransactionAsync(async () =>
+      {
+        await _accountRepository.UpdateAsync(account);
+      }, CancellationToken.None);
       throw new InvalidOperationException("Invalid OTP");
     }
 
@@ -109,13 +117,16 @@ public class AuthService : IAuthService
     account.OtpAttempts = 0;
     account.UpdatedAt = DateTime.UtcNow;
 
-    await _accountRepository.UpdateAsync(account);
+    await _unitOfWork.CommitTransactionAsync(async () =>
+    {
+      await _accountRepository.UpdateAsync(account);
+    }, CancellationToken.None);
 
     // send confirmation email
     try
     {
       var body = $"<p>Your password has been changed successfully.</p>";
-      await _emailHandler.EmailAsync(new MentorHub.API.Utilities.EmailDto(account.Email!, "Password Changed", body));
+      await _emailHandler.EmailAsync(new LevelUp.API.Utilities.EmailDto(account.Email!, "Password Changed", body));
     }
     catch
     {

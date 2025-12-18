@@ -109,3 +109,54 @@ If you want, I can also:
 - Generate the EF migration files (you previously ran migration command locally). Want me to create the migration files in source control instead? 
 
 What should I do next?
+
+Example responses and error mapping
+
+- Request OTP (POST /api/v1/auth/password/request)
+
+  Success (200):
+
+  {
+    "success": true,
+    "message": "If the email exists, an OTP has been sent."
+  }
+
+- Confirm OTP (POST /api/v1/auth/password/confirm)
+
+  Success (200):
+
+  {
+    "success": true,
+    "message": "Password changed successfully"
+  }
+
+  Errors (400):
+
+  - OTP expired or not requested
+
+  {
+    "Status": 400,
+    "Message": "OTP expired or not requested",
+    "Data": null
+  }
+
+  - Invalid OTP
+
+  {
+    "Status": 400,
+    "Message": "Invalid OTP",
+    "Data": null
+  }
+
+  - Maximum attempts exceeded
+
+  {
+    "Status": 400,
+    "Message": "Maximum OTP attempts exceeded",
+    "Data": null
+  }
+
+Notes for FE
+- The current implementation does NOT return `expiresAt` or `attemptsLeft` in responses. If you want these shown in the UI (recommended), we can extend the API to include `expiresAt` and `attemptsLeft` in the `request` response.
+- FE should implement a local 60s resend cooldown and a 15-minute expiry countdown starting when the `request` call returns successfully.
+- Map server error messages to friendly UI strings as shown above.
