@@ -13,6 +13,7 @@ public record EnrollmentResponse
     DateTime? CompletedDate,
     EnrollmentStatus Status,
     int CurrentProgress,
+    bool IsOverdue,          
     List<EnrollmentItemDto> Sections
 );
 
