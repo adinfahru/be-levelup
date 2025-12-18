@@ -77,6 +77,11 @@ public class EnrollmentService : IEnrollmentService
             CompletedAt: ei.CompletedAt
         )).ToList();
 
+        var isOverdue =
+        enrollment.Status != EnrollmentStatus.Completed &&
+        DateTimeHelper.IsOverdue(enrollment.TargetDate);
+
+
         // 6. Response
         return new EnrollmentResponse(
             EnrollmentId: enrollment.Id,
@@ -88,6 +93,7 @@ public class EnrollmentService : IEnrollmentService
             CompletedDate: enrollment.CompletedDate,
             Status: enrollment.Status,
             CurrentProgress: enrollment.CurrentProgress,
+            IsOverdue: isOverdue,
             Sections: sections
         );
     }
@@ -144,9 +150,9 @@ public class EnrollmentService : IEnrollmentService
         var nextItem = orderedItems.FirstOrDefault(i => !i.IsCompleted)
             ?? throw new InvalidOperationException("All checklist items already completed");
 
-        if (alreadySubmittedToday && !nextItem.ModuleItem!.IsFinalSubmission)
-            throw new InvalidOperationException(
-                "Only one checklist can be completed per working day");
+        // if (alreadySubmittedToday && !nextItem.ModuleItem!.IsFinalSubmission)
+        //     throw new InvalidOperationException(
+        //         "Only one checklist can be completed per working day");
 
         // 6. Anti skip (harus urut)
         if (nextItem.ModuleItemId != request.ModuleItemId)
@@ -168,7 +174,6 @@ public class EnrollmentService : IEnrollmentService
         nextItem.Feedback = request.Feedback;
         nextItem.CompletedAt = DateTime.UtcNow;
 
-        // 8.5 HANDLE FINAL SUBMISSION (CREATE / RESUBMIT)
         // 8.5 HANDLE FINAL SUBMISSION (CREATE / RESUBMIT)
         if (nextItem.ModuleItem!.IsFinalSubmission)
         {
@@ -274,6 +279,10 @@ public class EnrollmentService : IEnrollmentService
             CompletedAt: ei.CompletedAt
         )).ToList();
 
+        var isOverdue =
+        enrollment.Status != EnrollmentStatus.Completed &&
+        DateTimeHelper.IsOverdue(enrollment.TargetDate);
+
         return new EnrollmentResponse(
             EnrollmentId: enrollment.Id,
             ModuleId: module.Id,
@@ -284,6 +293,7 @@ public class EnrollmentService : IEnrollmentService
             CompletedDate: enrollment.CompletedDate,
             Status: enrollment.Status,
             CurrentProgress: enrollment.CurrentProgress,
+            IsOverdue: isOverdue,
             Sections: sections
         );
     }
@@ -332,18 +342,20 @@ public class EnrollmentService : IEnrollmentService
         if (!module.Items.Any())
             throw new InvalidOperationException("Module has no sections");
 
-        // 5. Create enrollment
+        var startDate = DateTime.UtcNow;
+
         var enrollment = new Enrollment
         {
             Id = Guid.NewGuid(),
-            AccountId = accountId, // ✅ source of truth
+            AccountId = accountId,
             ModuleId = moduleId,
-            StartDate = DateTime.UtcNow,
-            TargetDate = DateTime.UtcNow.AddDays(module.EstimatedDays),
+            StartDate = startDate,
+            TargetDate = DateTimeHelper.AddWorkingDays(startDate, module.EstimatedDays),
             Status = EnrollmentStatus.OnGoing,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = startDate,
             CurrentProgress = 0
         };
+
 
         // 6. Generate enrollment items
         var enrollmentItems = module.Items
@@ -383,6 +395,7 @@ public class EnrollmentService : IEnrollmentService
             );
         }).ToList();
 
+
         return new EnrollmentResponse(
             EnrollmentId: enrollment.Id,
             ModuleId: module.Id,
@@ -393,6 +406,7 @@ public class EnrollmentService : IEnrollmentService
             CompletedDate: null,
             Status: enrollment.Status,
             CurrentProgress: 0,
+            IsOverdue: false,
             Sections: sections
         );
     }
@@ -448,6 +462,11 @@ public class EnrollmentService : IEnrollmentService
             ))
             .ToList();
 
+        var isOverdue =
+enrollment.Status != EnrollmentStatus.Completed &&
+DateTimeHelper.IsOverdue(enrollment.TargetDate);
+
+
         // 6. Return ke FE (PAUSED TETAP DIKIRIM)
         return new EnrollmentResponse(
             EnrollmentId: enrollment.Id,
@@ -459,10 +478,10 @@ public class EnrollmentService : IEnrollmentService
             CompletedDate: enrollment.CompletedDate,
             Status: enrollment.Status,
             CurrentProgress: enrollment.CurrentProgress,
+            IsOverdue: isOverdue,
             Sections: sections
         );
     }
-
 
 
     public async Task<List<EnrollmentResponse>> GetEnrollmentHistoryAsync(
@@ -513,6 +532,10 @@ public class EnrollmentService : IEnrollmentService
                 ))
                 .ToList();
 
+            var isOverdue =
+            enrollment.Status != EnrollmentStatus.Completed &&
+            DateTimeHelper.IsOverdue(enrollment.TargetDate);
+
             responses.Add(new EnrollmentResponse(
                 EnrollmentId: enrollment.Id,
                 ModuleId: module.Id,
@@ -523,6 +546,7 @@ public class EnrollmentService : IEnrollmentService
                 CompletedDate: enrollment.CompletedDate,
                 Status: enrollment.Status,
                 CurrentProgress: enrollment.CurrentProgress,
+                IsOverdue: isOverdue,
                 Sections: sections
             ));
         }
@@ -587,6 +611,10 @@ public class EnrollmentService : IEnrollmentService
             ))
             .ToList();
 
+        var isOverdue =
+        enrollment.Status != EnrollmentStatus.Completed &&
+        DateTimeHelper.IsOverdue(enrollment.TargetDate);
+
         // 8. Response
         return new EnrollmentResponse(
             EnrollmentId: enrollment.Id,
@@ -598,9 +626,9 @@ public class EnrollmentService : IEnrollmentService
             CompletedDate: enrollment.CompletedDate,
             Status: enrollment.Status,
             CurrentProgress: enrollment.CurrentProgress,
+            IsOverdue: isOverdue,
             Sections: sections
         );
     }
-
 
 }
