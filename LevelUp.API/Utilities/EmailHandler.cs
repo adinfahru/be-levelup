@@ -64,7 +64,7 @@ public class EmailHandler : IEmailHandler
         await smtp.DisconnectAsync(true);
         // Console.WriteLine("SMTP: email sent");
     }
-    catch (Exception ex)
+    catch (Exception)
     {
         throw;
     }

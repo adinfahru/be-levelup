@@ -23,10 +23,11 @@ public class UserController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int limit = 10,
         [FromQuery] string? role = null,
+        [FromQuery] string? search = null,
         [FromQuery] bool? isActive = null,
         CancellationToken cancellationToken = default)
     {
-        var (data, total) = await _userService.GetAllAccountsAsync(page, limit, role, isActive, cancellationToken);
+        var (data, total) = await _userService.GetAllAccountsAsync(page, limit, role, search, isActive, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<UserResponse>>(200, "Success", data, total));
     }
 

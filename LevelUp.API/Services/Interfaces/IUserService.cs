@@ -12,6 +12,7 @@ public interface IUserService
         int page,
         int limit,
         string? role,
+        string? search,
         bool? isActive,
         CancellationToken cancellationToken);
     Task<UserResponse> GetAccountByIdAsync(Guid accountId, CancellationToken cancellationToken);
