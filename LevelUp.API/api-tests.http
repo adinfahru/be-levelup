@@ -51,7 +51,6 @@
 # - Employee 7 (Daniel): 30000000-0000-0000-0000-000000000007
 # - Employee 8 (Michael): 30000000-0000-0000-0000-000000000008
 # - Employee 9 (Sarah): 30000000-0000-0000-0000-000000000009
->>>>>>> a6c1af3a95178c5d10b072a18d5b86012d8f6dd4
 
 ###############################################
 # 1. AUTHENTICATION
@@ -1000,6 +999,25 @@ Authorization: Bearer {{managerToken}}
 PATCH {{baseUrl}}/dashboard/employee/00000000-0000-0000-0000-000000000000/status
 Content-Type: application/json
 Authorization: Bearer {{managerToken}}
+
+{
+  "isIdle": false
+}
+
+### 8.12 Update Employee Status - Non-existent Employee (Should Fail - 400)
+# Expected: 400 Bad Request - Employee not found
+PATCH {{baseUrl}}/dashboard/employee/00000000-0000-0000-0000-000000000000/status
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "isIdle": true
+}
+
+### 8.13 Update Employee Status as Employee (Should Fail - 403)
+PATCH {{baseUrl}}/dashboard/employee/30000000-0000-0000-0000-000000000003/status
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
 
 {
   "isIdle": true
