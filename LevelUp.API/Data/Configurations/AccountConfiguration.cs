@@ -27,7 +27,10 @@ namespace LevelUp.API.Data.Configurations
                 .HasColumnName("role")
                 .HasConversion<string>();
 
-            builder.Property(a => a.Otp).HasColumnName("otp");
+            // OTP stored as hashed string in "otp" column for backward compatibility
+            builder.Property(a => a.OtpHash).HasColumnName("otp").HasMaxLength(512).IsRequired(false);
+            builder.Property(a => a.OtpExpiresAt).HasColumnName("otp_expires_at");
+            builder.Property(a => a.OtpAttempts).HasColumnName("otp_attempts").HasDefaultValue(0);
 
             builder.Property(a => a.IsActive).HasDefaultValue(true).HasColumnName("is_active");
 

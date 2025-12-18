@@ -42,4 +42,19 @@ public class AuthController : ControllerBase
     // JWT is stateless, logout handled client-side by removing token
     return Ok(new { success = true, message = "Logged out successfully" });
   }
+
+  [HttpPost("password/request")]
+  public async Task<IActionResult> RequestPassword([FromBody] PasswordRequest dto)
+  {
+    await _authService.RequestPasswordChangeAsync(dto);
+    // Always return 200 to avoid leaking account existence
+    return Ok(new { success = true, message = "If the email exists, an OTP has been sent." });
+  }
+
+  [HttpPost("password/confirm")]
+  public async Task<IActionResult> ConfirmPassword([FromBody] PasswordConfirmRequest dto)
+  {
+    await _authService.ConfirmPasswordChangeAsync(dto);
+    return Ok(new { success = true, message = "Password changed successfully" });
+  }
 }

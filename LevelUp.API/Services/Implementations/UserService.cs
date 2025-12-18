@@ -23,6 +23,10 @@ public class UserService : IUserService
 
     public async Task CreateAccountAsync(UserRequest request, CancellationToken cancellationToken)
     {
+        // Validate password is required for create
+        if (string.IsNullOrEmpty(request.Password))
+            throw new InvalidOperationException("Password is required when creating a new account");
+
         // Validate position if provided
         if (request.PositionId.HasValue)
         {
@@ -37,7 +41,9 @@ public class UserService : IUserService
         {
             Id = accountId,
             Email = request.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            PasswordHash = string.IsNullOrWhiteSpace(request.Password)
+                ? throw new ArgumentException("Password is required for creating an account")
+                : BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = request.Role,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
@@ -89,7 +95,11 @@ public class UserService : IUserService
 
         // Update Account
         account.Email = request.Email;
-        account.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        // Only update password when a new password is provided
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            account.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        }
         account.Role = request.Role;
         if (request.IsActive.HasValue)
             account.IsActive = request.IsActive.Value;
@@ -124,6 +134,23 @@ public class UserService : IUserService
         }, cancellationToken);
     }
 
+    public async Task ActivateAccountAsync(Guid accountId, CancellationToken cancellationToken)
+    {
+        var account = await _accountRepository.GetByIdAsync(accountId, cancellationToken);
+
+        if (account == null)
+            throw new Exception("Account not found");
+
+        // Activate account
+        account.IsActive = true;
+        account.UpdatedAt = DateTime.UtcNow;
+
+        await _unitOfWork.CommitTransactionAsync(async () =>
+        {
+            await _accountRepository.UpdateAsync(account);
+        }, cancellationToken);
+    }
+
     public async Task<UserResponse> GetAccountByIdAsync(Guid accountId, CancellationToken cancellationToken)
     {
         var account = await _accountRepository.GetByIdAsync(accountId, cancellationToken);
@@ -131,11 +158,18 @@ public class UserService : IUserService
         if (account is null)
             throw new NullReferenceException("Account not found");
 
-        // Ambil employee berdasarkan AccountId
+        // Ambil employee berdasarkan AccountId dengan Position
         var employee = await _employeeRepository.GetByAccountIdAsync(accountId, cancellationToken);
 
         if (employee is null)
             throw new NullReferenceException("Employee not found for this account");
+
+        // Load Position if PositionId exists
+        Position? position = null;
+        if (employee.PositionId.HasValue)
+        {
+            position = await _positionRepository.GetByIdAsync(employee.PositionId.Value, cancellationToken);
+        }
 
         return new UserResponse(
             account.Id,
@@ -145,35 +179,51 @@ public class UserService : IUserService
             employee.FirstName ?? "",
             employee.LastName ?? "",
             employee.PositionId,
+            position?.Title,
             account.CreatedAt,
             account.UpdatedAt
         );
     }
 
-    public Task<(IEnumerable<UserResponse> items, int total)> GetAllAccountsAsync(
+    public async Task<(IEnumerable<UserResponse> items, int total)> GetAllAccountsAsync(
         int page,
         int limit,
         string? role,
+        string? search,
         bool? isActive,
         CancellationToken cancellationToken)
     {
         IQueryable<Account> query = _accountRepository.GetQueryable()
-            .Include(a => a.Employee);
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Position);
 
         // Filter by isActive
         if (isActive.HasValue)
             query = query.Where(a => a.IsActive == isActive.Value);
 
-        // Filter by role
-        if (!string.IsNullOrWhiteSpace(role))
-            query = query.Where(a => a.Role.ToString() == role);
+        // Filter by role (parse string to enum to keep translation server-side)
+        if (!string.IsNullOrWhiteSpace(role) && Enum.TryParse<UserRole>(role, true, out var parsedRole))
+        {
+            query = query.Where(a => a.Role == parsedRole);
+        }
 
-        var total = query.Count();
-        var accounts = query
+        // Filter by search (email, firstName, lastName) — use SQL-friendly LIKE via ToLower()
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim().ToLower();
+            query = query.Where(a =>
+                (a.Email != null && a.Email.ToLower().Contains(s)) ||
+                (a.Employee != null && a.Employee.FirstName != null && a.Employee.FirstName.ToLower().Contains(s)) ||
+                (a.Employee != null && a.Employee.LastName != null && a.Employee.LastName.ToLower().Contains(s))
+            );
+        }
+
+        var total = await query.CountAsync(cancellationToken);
+        var accounts = await query
             .OrderByDescending(a => a.CreatedAt)
             .Skip((page - 1) * limit)
             .Take(limit)
-            .ToList();
+            .ToListAsync(cancellationToken);
 
         var accountList = accounts.Select(account =>
             new UserResponse(
@@ -184,11 +234,12 @@ public class UserService : IUserService
                 account.Employee?.FirstName ?? "",
                 account.Employee?.LastName ?? "",
                 account.Employee?.PositionId,
+                account.Employee?.Position?.Title,
                 account.CreatedAt,
                 account.UpdatedAt
             )
         );
 
-        return Task.FromResult((accountList.AsEnumerable(), total));
+        return (accountList.AsEnumerable(), total);
     }
 }

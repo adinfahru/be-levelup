@@ -55,6 +55,14 @@ public class ModulesController : ControllerBase
         return Ok(new ApiResponse<ModuleDetailResponse>(module));
     }
 
+    [HttpGet("{moduleId}/enrollments")]
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> GetModuleEnrollments(Guid moduleId)
+    {
+        var enrollments = await _moduleService.GetModuleEnrollmentsAsync(moduleId);
+        return Ok(new ApiResponse<List<ModuleEnrollmentUserResponse>>(enrollments));
+    }
+
     [HttpPost]
     [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Create([FromBody] CreateModuleRequest request)

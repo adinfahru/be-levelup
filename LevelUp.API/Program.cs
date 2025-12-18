@@ -39,7 +39,25 @@ builder.Services.AddScoped<IPositionService, PositionService>();
 builder.Services.AddScoped<IModuleService, ModuleService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 
+var emailSection = builder.Configuration.GetSection("EmailSettings");
+
+var smtpServer = emailSection["SmtpServer"];
+var smtpPort = emailSection["SmtpPort"];
+var mailFrom = emailSection["MailFrom"];
+var mailUser = emailSection["MailUser"];
+var mailPassword = emailSection["MailPassword"];
+
+builder.Services.AddTransient<IEmailHandler>(_ =>
+    new EmailHandler(
+        smtpServer ?? "localhost",
+        int.TryParse(smtpPort, out var port) ? port : 25,
+        mailUser ?? "",
+        mailPassword ?? "",
+        mailFrom ?? "adminlevelup@email.com"
+    )
+);
 //Global Exception
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 

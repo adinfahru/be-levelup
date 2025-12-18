@@ -4,6 +4,7 @@ using LevelUp.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LevelUp.API.Migrations
 {
     [DbContext(typeof(LevelUpDbContext))]
-    partial class LevelUpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251216082020_AddEstimatedDaysToSubmissions")]
+    partial class AddEstimatedDaysToSubmissions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,19 +50,8 @@ namespace LevelUp.API.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
 
-                    b.Property<int>("OtpAttempts")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int?>("Otp")
                         .HasColumnType("int")
-                        .HasDefaultValue(0)
-                        .HasColumnName("otp_attempts");
-
-                    b.Property<DateTime?>("OtpExpiresAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("otp_expires_at");
-
-                    b.Property<string>("OtpHash")
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)")
                         .HasColumnName("otp");
 
                     b.Property<string>("PasswordHash")

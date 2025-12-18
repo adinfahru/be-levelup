@@ -7,6 +7,9 @@ namespace LevelUp.API.Entity
         public Guid Id { get; set; }
         public Guid EnrollmentId { get; set; }
         public SubmissionStatus Status { get; set; }
+        public string? Notes { get; set;}
+        public string? ManagerFeedback { get; set; }
+        public int? EstimatedDays { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 

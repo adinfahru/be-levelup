@@ -11,14 +11,19 @@ public class EnrollmentRepository : Repository<Enrollment>, IEnrollmentRepositor
     {
     }
 
-    public async Task<Enrollment?> GetActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+    public async Task<Enrollment?> GetActiveByUserIdAsync(
+    Guid userId,
+    CancellationToken cancellationToken)
     {
         return await _context.Enrollments
             .Where(e =>
                 e.AccountId == userId &&
-                e.Status == EnrollmentStatus.OnGoing)
+                e.Status != EnrollmentStatus.Completed
+            )
+            .OrderByDescending(e => e.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
     }
+
 
     public async Task<List<Enrollment>> GetCompletedByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
