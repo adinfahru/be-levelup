@@ -46,5 +46,4 @@ public class ModuleRepository(LevelUpDbContext context) : Repository<Module>(con
             .Include(m => m.Creator)
             .FirstOrDefaultAsync(m => m.Id == moduleId, cancellationToken);
     }
-
 }

@@ -60,4 +60,11 @@ public class UserController : ControllerBase
         await _userService.DeleteAccountAsync(accountId, cancellationToken);
         return Ok(new ApiResponse<object>("Account Success Delete"));
     }
+
+    [HttpPut("{accountId}/activate")]
+    public async Task<IActionResult> ActivateAccount(Guid accountId, CancellationToken cancellationToken)
+    {
+        await _userService.ActivateAccountAsync(accountId, cancellationToken);
+        return Ok(new ApiResponse<object>("Account activated successfully"));
+    }
 }

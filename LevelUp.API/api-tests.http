@@ -51,7 +51,6 @@
 # - Employee 7 (Daniel): 30000000-0000-0000-0000-000000000007
 # - Employee 8 (Michael): 30000000-0000-0000-0000-000000000008
 # - Employee 9 (Sarah): 30000000-0000-0000-0000-000000000009
->>>>>>> a6c1af3a95178c5d10b072a18d5b86012d8f6dd4
 
 ###############################################
 # 1. AUTHENTICATION
@@ -63,7 +62,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "adminz@levelup.com",
+  "email": "admin@levelup.com",
   "password": "Admin123!"
 }
 
@@ -73,7 +72,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "manager1@levelup.com",
+  "email": "manager@levelup.com",
   "password": "Manager123!"
 }
 
@@ -155,7 +154,36 @@ Authorization: Bearer {{adminToken}}
 
 {
   "currentPassword": "Admin123!",
-  "newPassword": "NewAdmin123!"
+  "newPassword": "12341234"
+}
+
+### 1.6 Request Password Change (Send OTP)
+# @name requestPasswordOtp
+POST {{baseUrl}}/auth/password/request
+Content-Type: application/json
+
+{
+  "email": "employee@levelup.com"
+}
+
+### 1.7 Confirm Password Change (Use OTP)
+# @name confirmPasswordOtp
+POST {{baseUrl}}/auth/password/confirm
+Content-Type: application/json
+
+{
+  "email": "employee@levelup.com",
+  "otp": "521849",
+  "newPassword": "12341234"
+}
+
+### 1.8 Resend Password OTP
+# Optional - server may rate-limit
+POST {{baseUrl}}/auth/password/request
+Content-Type: application/json
+
+{
+  "email": "employee@levelup.com"
 }
 
 ###############################################
@@ -971,6 +999,25 @@ Authorization: Bearer {{managerToken}}
 PATCH {{baseUrl}}/dashboard/employee/00000000-0000-0000-0000-000000000000/status
 Content-Type: application/json
 Authorization: Bearer {{managerToken}}
+
+{
+  "isIdle": false
+}
+
+### 8.12 Update Employee Status - Non-existent Employee (Should Fail - 400)
+# Expected: 400 Bad Request - Employee not found
+PATCH {{baseUrl}}/dashboard/employee/00000000-0000-0000-0000-000000000000/status
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "isIdle": true
+}
+
+### 8.13 Update Employee Status as Employee (Should Fail - 403)
+PATCH {{baseUrl}}/dashboard/employee/30000000-0000-0000-0000-000000000003/status
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
 
 {
   "isIdle": true
