@@ -7,7 +7,7 @@ public record UserRequest
     string FirstName,
     string LastName,
     string Email,
-    string Password,
+    string? Password,
     UserRole Role,
     Guid? PositionId,
     bool? IsActive

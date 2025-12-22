@@ -2,10 +2,14 @@
 # Install "REST Client" extension in VS Code to run these tests
 # Click "Send Request" above each request to test
 
-@baseUrl = http://localhost:5067/api/v1
-<<<<<<< HEAD
-=======
+# LevelUp API Tests
+# Install "REST Client" extension in VS Code to run these tests
+# Click "Send Request" above each request to test
 
+@baseUrl = http://localhost:5067/api/v1
+
+###############################################
+# FIXED GUID REFERENCE
 ###############################################
 # FIXED GUID REFERENCE
 ###############################################
@@ -47,7 +51,6 @@
 # - Employee 7 (Daniel): 30000000-0000-0000-0000-000000000007
 # - Employee 8 (Michael): 30000000-0000-0000-0000-000000000008
 # - Employee 9 (Sarah): 30000000-0000-0000-0000-000000000009
->>>>>>> a6c1af3a95178c5d10b072a18d5b86012d8f6dd4
 
 ###############################################
 # 1. AUTHENTICATION
@@ -69,7 +72,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "manager1@levelup.com",
+  "email": "manager@levelup.com",
   "password": "Manager123!"
 }
 
@@ -151,7 +154,36 @@ Authorization: Bearer {{adminToken}}
 
 {
   "currentPassword": "Admin123!",
-  "newPassword": "NewAdmin123!"
+  "newPassword": "12341234"
+}
+
+### 1.6 Request Password Change (Send OTP)
+# @name requestPasswordOtp
+POST {{baseUrl}}/auth/password/request
+Content-Type: application/json
+
+{
+  "email": "employee@levelup.com"
+}
+
+### 1.7 Confirm Password Change (Use OTP)
+# @name confirmPasswordOtp
+POST {{baseUrl}}/auth/password/confirm
+Content-Type: application/json
+
+{
+  "email": "employee@levelup.com",
+  "otp": "521849",
+  "newPassword": "12341234"
+}
+
+### 1.8 Resend Password OTP
+# Optional - server may rate-limit
+POST {{baseUrl}}/auth/password/request
+Content-Type: application/json
+
+{
+  "email": "employee@levelup.com"
 }
 
 ###############################################
@@ -160,6 +192,18 @@ Authorization: Bearer {{adminToken}}
 
 ### 2.1 Get All Users (Admin)
 GET {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+
+### 2.1.1 Get Users - Paginated (page & limit)
+GET {{baseUrl}}/users?page=2&limit=10
+Authorization: Bearer {{adminToken}}
+
+### 2.1.2 Get Users - Search (case-insensitive)
+GET {{baseUrl}}/users?page=1&limit=10&search=christopher
+Authorization: Bearer {{adminToken}}
+
+### 2.1.3 Get Users - Filter by Role
+GET {{baseUrl}}/users?page=1&limit=10&role=Admin
 Authorization: Bearer {{adminToken}}
 
 ### 2.2 Get User by ID (Admin) - Replace {userId} with actual ID
@@ -181,7 +225,7 @@ Authorization: Bearer {{adminToken}}
 }
 
 ### 2.4 Update User (Admin) - Replace {userId} with actual ID
-PUT {{baseUrl}}/users/acc96cb7-dcc6-4742-8299-2b8288fb9a04
+PUT {{baseUrl}}/users/d1bbd9b7-8e37-4e71-a653-8f01db03cff4
 Content-Type: application/json
 Authorization: Bearer {{adminToken}}
 
@@ -189,9 +233,8 @@ Authorization: Bearer {{adminToken}}
   "firstName": "John Updated",
   "lastName": "Doe Updated",
   "email": "john.updated@example.com",
-  "password": "NewPassword123",
   "role": "Manager",
-  "positionId": "14eac010-ecae-46a8-acdc-2a47ece8001e"
+  "positionId": "10000000-0000-0000-0000-000000000002"
 }
 
 ### 2.5 Delete User (Admin) - Replace {userId} with actual ID
@@ -956,6 +999,25 @@ Authorization: Bearer {{managerToken}}
 PATCH {{baseUrl}}/dashboard/employee/00000000-0000-0000-0000-000000000000/status
 Content-Type: application/json
 Authorization: Bearer {{managerToken}}
+
+{
+  "isIdle": false
+}
+
+### 8.12 Update Employee Status - Non-existent Employee (Should Fail - 400)
+# Expected: 400 Bad Request - Employee not found
+PATCH {{baseUrl}}/dashboard/employee/00000000-0000-0000-0000-000000000000/status
+Content-Type: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "isIdle": true
+}
+
+### 8.13 Update Employee Status as Employee (Should Fail - 403)
+PATCH {{baseUrl}}/dashboard/employee/30000000-0000-0000-0000-000000000003/status
+Content-Type: application/json
+Authorization: Bearer {{employeeToken}}
 
 {
   "isIdle": true
