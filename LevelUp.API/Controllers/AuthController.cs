@@ -1,5 +1,7 @@
 using LevelUp.API.DTOs.Auth;
 using LevelUp.API.Services.Interfaces;
+using LevelUp.API.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using LevelUp.API.Utilities;
@@ -11,10 +13,12 @@ namespace LevelUp.API.Controllers;
 public class AuthController : ControllerBase
 {
   private readonly IAuthService _authService;
+  private readonly LevelUpDbContext _db;
 
-  public AuthController(IAuthService authService)
+  public AuthController(IAuthService authService, LevelUpDbContext db)
   {
     _authService = authService;
+    _db = db;
   }
 
   [HttpPost("login")]
@@ -41,6 +45,40 @@ public class AuthController : ControllerBase
   {
     // JWT is stateless, logout handled client-side by removing token
     return Ok(new { success = true, message = "Logged out successfully" });
+  }
+
+  [Authorize]
+  [HttpGet("profile")]
+  public async Task<IActionResult> GetProfile(CancellationToken cancellationToken = default)
+  {
+    var accountId = User.GetAccountId();
+
+    var employee = await _db.Employees
+        .Where(e => e.AccountId == accountId)
+        .Select(e => new
+        {
+          e.Id,
+          e.AccountId,
+          e.FirstName,
+          e.LastName,
+          e.PositionId,
+          e.IsIdle,
+          e.CreatedAt,
+          e.UpdatedAt
+        })
+        .FirstOrDefaultAsync(cancellationToken);
+
+    if (employee == null)
+      return NotFound(new ApiResponse<object>(StatusCodes.Status404NotFound, "Employee not found"));
+
+    var account = await _db.Accounts
+        .Where(a => a.Id == accountId)
+        .Select(a => new { a.Id, a.Email, a.Role, a.IsActive })
+        .FirstOrDefaultAsync(cancellationToken);
+
+    var data = new { Account = account, Employee = employee };
+
+    return Ok(new ApiResponse<object>(StatusCodes.Status200OK, "Success", data));
   }
 
   [HttpPost("password/request")]
