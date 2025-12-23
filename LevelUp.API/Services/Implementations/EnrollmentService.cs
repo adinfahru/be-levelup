@@ -634,4 +634,94 @@ DateTimeHelper.IsOverdue(enrollment.TargetDate);
         );
     }
 
+    public async Task<EnrollmentResponse> AssignEnrollmentAsync(Guid managerAccountId, AssignEnrollmentRequest request, CancellationToken cancellationToken)
+    {
+        var employee = await _employeeRepository.GetByAccountIdAsync(request.EmployeeId, cancellationToken)
+            ?? throw new InvalidOperationException("Employee not found");
+
+        var activeEnrollment = await _enrollmentRepository.GetActiveByUserIdAsync(request.EmployeeId, cancellationToken);
+
+        if (activeEnrollment is not null)
+            throw new InvalidOperationException("User already has active enrollment");
+
+        var module = await _moduleRepository
+            .GetByIdWithItemsAsync(request.ModuleId, cancellationToken)
+            ?? throw new InvalidOperationException("Module not found");
+
+        if (module.CreatedBy != managerAccountId)
+            throw new UnauthorizedAccessException("You can only assign your own module");
+
+        if (!module.Items.Any())
+            throw new InvalidOperationException("Module has no sections");
+
+        var startDate = DateTime.UtcNow;
+        var enrollment = new Enrollment
+        {
+            Id = Guid.NewGuid(),
+            AccountId = request.EmployeeId,
+            ModuleId = module.Id,
+            StartDate = startDate,
+            TargetDate = DateTimeHelper.AddWorkingDays(startDate, module.EstimatedDays),
+            Status = EnrollmentStatus.OnGoing,
+            CreatedAt = startDate,
+            CurrentProgress = 0
+        };
+
+        var enrollmentItems = module.Items
+            .OrderBy(i => i.OrderIndex)
+            .Select(i => new EnrollmentItem
+            {
+                Id = Guid.NewGuid(),
+                EnrollmentId = enrollment.Id,
+                ModuleItemId = i.Id,
+                IsCompleted = false
+            })
+            .ToList();
+
+        await _unitOfWork.CommitTransactionAsync(async () =>
+        {
+            await _enrollmentRepository.CreateAsync(enrollment, cancellationToken);
+            await _enrollmentItemRepository.CreateManyAsync(enrollmentItems, cancellationToken);
+        }, cancellationToken);
+
+        // 8️⃣ (Optional tapi recommended) Kirim email ke employee
+        await _emailHandler.EmailAsync(new EmailDto(
+            employee.Account!.Email!,
+            "New Module Assigned",
+            $"<p>You have been assigned a new module: <b>{module.Title}</b></p>"
+        ));
+
+        // 9️⃣ Mapping response
+        var sections = enrollmentItems.Select(ei =>
+        {
+            var item = module.Items.First(i => i.Id == ei.ModuleItemId);
+
+            return new EnrollmentItemDto(
+                EnrollmentItemId: ei.Id,
+                ModuleItemId: item.Id,
+                OrderIndex: item.OrderIndex,
+                ModuleItemTitle: item.Title!,
+                ModuleItemDescription: item.Descriptions!,
+                ModuleItemUrl: item.Url!,
+                IsFinalSubmission: item.IsFinalSubmission,
+                IsCompleted: false,
+                EvidenceUrl: null,
+                CompletedAt: null
+            );
+        }).ToList();
+
+        return new EnrollmentResponse(
+            EnrollmentId: enrollment.Id,
+            ModuleId: module.Id,
+            ModuleTitle: module.Title!,
+            ModuleDescription: module.Description!,
+            StartDate: enrollment.StartDate,
+            TargetDate: enrollment.TargetDate,
+            CompletedDate: null,
+            Status: enrollment.Status,
+            CurrentProgress: 0,
+            IsOverdue: false,
+            Sections: sections
+        );
+    }
 }

@@ -14,6 +14,7 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
     public async Task<Employee?> GetByAccountIdAsync(Guid accountId, CancellationToken cancellationToken)
     {
         return await _context.Employees
+            .Include(e => e.Account)
             .FirstOrDefaultAsync(e => e.AccountId == accountId, cancellationToken);
     }
 
