@@ -39,9 +39,6 @@ public class EnrollmentController : ControllerBase
         return Ok(new ApiResponse<EnrollmentResponse>(enrollment));
     }
 
-    // =========================
-    // ENROLL MODULE
-    // =========================
     [HttpPost]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> Enroll(
@@ -60,9 +57,6 @@ public class EnrollmentController : ControllerBase
             new ApiResponse<EnrollmentResponse>(response));
     }
 
-    // =========================
-    // SUBMIT CHECKLIST ITEM
-    // =========================
     [HttpPost("{enrollmentid:guid}/items")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> SubmitChecklist(
@@ -82,9 +76,6 @@ public class EnrollmentController : ControllerBase
         return Ok(new ApiResponse<EnrollmentResponse>(response));
     }
 
-    // =========================
-    // GET PROGRESS
-    // =========================
     [HttpGet("{enrollmentid:guid}/progress")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> GetProgress(
@@ -102,9 +93,6 @@ public class EnrollmentController : ControllerBase
         return Ok(new ApiResponse<EnrollmentResponse>(progress));
     }
 
-    // =========================
-    // RESUME ENROLLMENT
-    // =========================
     [HttpPost("{enrollmentid:guid}/resume")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> Resume(
@@ -122,9 +110,6 @@ public class EnrollmentController : ControllerBase
         return Ok(new ApiResponse<EnrollmentResponse>(response));
     }
 
-    // =========================
-    // GET HISTORY
-    // =========================
     [HttpGet("history")]
     [Authorize(Roles = "Employee")]
     public async Task<IActionResult> GetHistory(
@@ -138,5 +123,27 @@ public class EnrollmentController : ControllerBase
                 cancellationToken);
 
         return Ok(new ApiResponse<List<EnrollmentResponse>>(history));
+    }
+
+    [HttpPost("assign")]
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> AssignEnrollment(
+    [FromBody] AssignEnrollmentRequest request,
+    CancellationToken cancellationToken
+)
+    {
+        var managerId = User.GetAccountId();
+
+        var result = await _enrollmentService.AssignEnrollmentAsync(
+            managerId,
+            request,
+            cancellationToken
+        );
+
+        return Ok(new ApiResponse<EnrollmentResponse>(
+            200,
+            "Enrollment assigned successfully",
+            result
+        ));
     }
 }

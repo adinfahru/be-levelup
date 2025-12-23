@@ -41,6 +41,7 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 
+
 var emailSection = builder.Configuration.GetSection("EmailSettings");
 
 var smtpServer = emailSection["SmtpServer"];
@@ -58,6 +59,7 @@ builder.Services.AddTransient<IEmailHandler>(_ =>
         mailFrom ?? "adminlevelup@email.com"
     )
 );
+
 //Global Exception
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
