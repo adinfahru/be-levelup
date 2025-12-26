@@ -636,10 +636,10 @@ DateTimeHelper.IsOverdue(enrollment.TargetDate);
 
     public async Task<EnrollmentResponse> AssignEnrollmentAsync(Guid managerAccountId, AssignEnrollmentRequest request, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetByAccountIdAsync(request.EmployeeId, cancellationToken)
+        var employee = await _employeeRepository.GetByAccountIdAsync(request.AccountId, cancellationToken)
             ?? throw new InvalidOperationException("Employee not found");
 
-        var activeEnrollment = await _enrollmentRepository.GetActiveByUserIdAsync(request.EmployeeId, cancellationToken);
+        var activeEnrollment = await _enrollmentRepository.GetActiveByUserIdAsync(request.AccountId, cancellationToken);
 
         if (activeEnrollment is not null)
             throw new InvalidOperationException("User already has active enrollment");
@@ -658,7 +658,7 @@ DateTimeHelper.IsOverdue(enrollment.TargetDate);
         var enrollment = new Enrollment
         {
             Id = Guid.NewGuid(),
-            AccountId = request.EmployeeId,
+            AccountId = request.AccountId,
             ModuleId = module.Id,
             StartDate = startDate,
             TargetDate = DateTimeHelper.AddWorkingDays(startDate, module.EstimatedDays),
