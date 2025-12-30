@@ -644,6 +644,15 @@ DateTimeHelper.IsOverdue(enrollment.TargetDate);
         if (activeEnrollment is not null)
             throw new InvalidOperationException("User already has active enrollment");
 
+        var hasCompleted = await _enrollmentRepository.HasCompletedModuleAsync(request.AccountId,request.ModuleId,cancellationToken);
+
+        if (hasCompleted)
+        {
+            throw new InvalidOperationException(
+                "Employee has already completed this module"
+            );
+        }
+
         var module = await _moduleRepository
             .GetByIdWithItemsAsync(request.ModuleId, cancellationToken)
             ?? throw new InvalidOperationException("Module not found");
@@ -684,14 +693,12 @@ DateTimeHelper.IsOverdue(enrollment.TargetDate);
             await _enrollmentItemRepository.CreateManyAsync(enrollmentItems, cancellationToken);
         }, cancellationToken);
 
-        // 8️⃣ (Optional tapi recommended) Kirim email ke employee
         await _emailHandler.EmailAsync(new EmailDto(
             employee.Account!.Email!,
             "New Module Assigned",
             $"<p>You have been assigned a new module: <b>{module.Title}</b></p>"
         ));
 
-        // 9️⃣ Mapping response
         var sections = enrollmentItems.Select(ei =>
         {
             var item = module.Items.First(i => i.Id == ei.ModuleItemId);
@@ -724,4 +731,5 @@ DateTimeHelper.IsOverdue(enrollment.TargetDate);
             Sections: sections
         );
     }
+
 }

@@ -517,4 +517,39 @@ public class ModuleService : IModuleService
         ))
         .ToList();
   }
+
+  public async Task<List<AssignableModuleResponse>> GetAssignableModulesAsync(
+    Guid accountId,
+    CancellationToken cancellationToken)
+  {
+    // 1️⃣ Ambil semua module yang ACTIVE
+    var modules = await _moduleRepository.GetQueryable()
+        .Where(m => m.IsActive)
+        .OrderBy(m => m.Title)
+        .ToListAsync(cancellationToken);
+
+    // 2️⃣ Ambil module yang SUDAH DISELESAIKAN
+    var completedModuleIds =
+        await _enrollmentRepository.GetCompletedModuleIdsAsync(
+            accountId,
+            cancellationToken
+        );
+
+    // 3️⃣ Ambil enrollment AKTIF (kalau ada)
+    var activeEnrollment =
+        await _enrollmentRepository.GetActiveByUserIdAsync(
+            accountId,
+            cancellationToken
+        );
+
+    var activeModuleId = activeEnrollment?.ModuleId;
+
+    // 4️⃣ Mapping → AssignableModuleResponse
+    return modules.Select(m => new AssignableModuleResponse(
+        m.Id,
+        m.Title ?? string.Empty,
+        IsAlreadyCompleted: completedModuleIds.Contains(m.Id),
+        IsCurrentlyEnrolled: activeModuleId == m.Id
+    )).ToList();
+  }
 }

@@ -8,6 +8,5 @@ public interface IEnrollmentRepository : IRepository<Enrollment>
     Task<List<Enrollment>> GetCompletedByUserIdAsync(Guid userId, CancellationToken cancellationToken);
     Task<Enrollment?> GetByIdAndAccountIdAsync(Guid enrollmentId, Guid accountId, CancellationToken cancellationToken);
     Task<bool> HasCompletedModuleAsync(Guid accountId,Guid moduleId,CancellationToken cancellationToken);
-
-
+    Task<List<Guid>> GetCompletedModuleIdsAsync(Guid accountId,CancellationToken cancellationToken);
 }

@@ -18,5 +18,6 @@ public interface IEnrollmentService
     Task<EnrollmentResponse> GetEnrollmentProgressAsync(Guid enrollmentId,Guid accountId,CancellationToken cancellationToken);
 
     Task<EnrollmentResponse> AssignEnrollmentAsync(Guid managerAccountId, AssignEnrollmentRequest request, CancellationToken cancellationToken);
+
 }
 
