@@ -636,13 +636,22 @@ DateTimeHelper.IsOverdue(enrollment.TargetDate);
 
     public async Task<EnrollmentResponse> AssignEnrollmentAsync(Guid managerAccountId, AssignEnrollmentRequest request, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetByAccountIdAsync(request.EmployeeId, cancellationToken)
+        var employee = await _employeeRepository.GetByAccountIdAsync(request.AccountId, cancellationToken)
             ?? throw new InvalidOperationException("Employee not found");
 
-        var activeEnrollment = await _enrollmentRepository.GetActiveByUserIdAsync(request.EmployeeId, cancellationToken);
+        var activeEnrollment = await _enrollmentRepository.GetActiveByUserIdAsync(request.AccountId, cancellationToken);
 
         if (activeEnrollment is not null)
             throw new InvalidOperationException("User already has active enrollment");
+
+        var hasCompleted = await _enrollmentRepository.HasCompletedModuleAsync(request.AccountId,request.ModuleId,cancellationToken);
+
+        if (hasCompleted)
+        {
+            throw new InvalidOperationException(
+                "Employee has already completed this module"
+            );
+        }
 
         var module = await _moduleRepository
             .GetByIdWithItemsAsync(request.ModuleId, cancellationToken)
@@ -658,7 +667,7 @@ DateTimeHelper.IsOverdue(enrollment.TargetDate);
         var enrollment = new Enrollment
         {
             Id = Guid.NewGuid(),
-            AccountId = request.EmployeeId,
+            AccountId = request.AccountId,
             ModuleId = module.Id,
             StartDate = startDate,
             TargetDate = DateTimeHelper.AddWorkingDays(startDate, module.EstimatedDays),
@@ -684,14 +693,12 @@ DateTimeHelper.IsOverdue(enrollment.TargetDate);
             await _enrollmentItemRepository.CreateManyAsync(enrollmentItems, cancellationToken);
         }, cancellationToken);
 
-        // 8️⃣ (Optional tapi recommended) Kirim email ke employee
         await _emailHandler.EmailAsync(new EmailDto(
             employee.Account!.Email!,
             "New Module Assigned",
             $"<p>You have been assigned a new module: <b>{module.Title}</b></p>"
         ));
 
-        // 9️⃣ Mapping response
         var sections = enrollmentItems.Select(ei =>
         {
             var item = module.Items.First(i => i.Id == ei.ModuleItemId);
@@ -724,4 +731,5 @@ DateTimeHelper.IsOverdue(enrollment.TargetDate);
             Sections: sections
         );
     }
+
 }

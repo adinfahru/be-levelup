@@ -80,6 +80,7 @@ public class DashboardService : IDashboardService
 
         return filtered.Select(e => new EmployeeListResponse(
             e.Id,
+            e.AccountId,
             e.FirstName ?? string.Empty,
             e.LastName ?? string.Empty,
             e.Account?.Email ?? string.Empty,
