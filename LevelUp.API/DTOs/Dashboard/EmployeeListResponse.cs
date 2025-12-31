@@ -6,5 +6,6 @@ public record EmployeeListResponse(
     string FirstName,
     string LastName,
     string Email,
-    bool IsIdle
+    bool IsIdle,
+    bool IsActive
 );

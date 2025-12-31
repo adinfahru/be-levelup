@@ -84,7 +84,8 @@ public class DashboardService : IDashboardService
             e.FirstName ?? string.Empty,
             e.LastName ?? string.Empty,
             e.Account?.Email ?? string.Empty,
-            e.IsIdle
+            e.IsIdle,
+            e.Account!.IsActive
         ));
     }
 
