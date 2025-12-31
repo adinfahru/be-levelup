@@ -147,6 +147,10 @@ Content-Type: application/json
   "password": "wrongpassword"
 }
 
+### 1.4.1 Get Profile (Admin)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{managerToken}}
+
 ### 1.5 Change Password (Requires Admin Token)
 PUT {{baseUrl}}/auth/change-password
 Content-Type: application/json
