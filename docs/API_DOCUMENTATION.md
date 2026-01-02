@@ -65,34 +65,43 @@ https://localhost:7118/api/v1/enrollments
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
 | POST | `/api/v1/auth/login` | User login | No | - |
-| PUT | `/api/v1/auth/change-password` | Change password | Yes | All |
+| POST | `/api/v1/auth/logout` | User logout | Yes | All |
+| GET | `/api/v1/auth/profile` | Get current user profile | Yes | All |
+| POST | `/api/v1/auth/password/request` | Request password reset OTP | No | - |
+| POST | `/api/v1/auth/password/confirm` | Confirm password reset with OTP | No | - |
 
-### User Management
+### User Management (Admin)
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
-| GET | `/api/v1/users` | Get all users | Yes | Admin |
-| POST | `/api/v1/users` | Create new user | Yes | Admin |
+| GET | `/api/v1/users` | Get all users with pagination | Yes | Admin |
 | GET | `/api/v1/users/{id}` | Get user by ID | Yes | Admin |
-| PUT | `/api/v1/users/{id}` | Update user | Yes | Admin |
-| DELETE | `/api/v1/users/{id}` | Delete user (soft) | Yes | Admin |
+| POST | `/api/v1/users` | Create new user account | Yes | Admin |
+| PUT | `/api/v1/users/{id}` | Update user account | Yes | Admin |
+| DELETE | `/api/v1/users/{id}` | Delete user (soft delete) | Yes | Admin |
+| PUT | `/api/v1/users/{id}/activate` | Activate deactivated account | Yes | Admin |
 
-### Position Management
+### Position Management (Admin)
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
 | GET | `/api/v1/positions` | Get all positions | Yes | Admin |
-| POST | `/api/v1/positions` | Create new position | Yes | Admin |
 | GET | `/api/v1/positions/{id}` | Get position by ID | Yes | Admin |
+| POST | `/api/v1/positions` | Create new position | Yes | Admin |
 | PUT | `/api/v1/positions/{id}` | Update position | Yes | Admin |
-| DELETE | `/api/v1/positions/{id}` | Delete position (soft) | Yes | Admin |
+| DELETE | `/api/v1/positions/{id}` | Delete position (soft delete) | Yes | Admin |
 
 ### Module Management
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
-| GET | `/api/v1/modules` | Get all modules | Yes | Manager, Employee |
+| GET | `/api/v1/modules` | Get all modules with pagination | Yes | Manager, Employee |
+| GET | `/api/v1/modules/{id}` | Get module details with items | Yes | Manager, Employee |
+| GET | `/api/v1/modules/{moduleId}/enrollments` | Get module enrollments | Yes | Manager |
+| GET | `/api/v1/modules/assignable` | Get assignable modules for employee | Yes | Manager |
 | POST | `/api/v1/modules` | Create new module | Yes | Manager |
-| GET | `/api/v1/modules/{id}` | Get module details | Yes | Manager, Employee |
 | PUT | `/api/v1/modules/{id}` | Update module | Yes | Manager |
-| PATCH | `/api/v1/modules/{id}/status` | Update module status | Yes | Manager |
+| POST | `/api/v1/modules/{moduleId}/items` | Add item to module | Yes | Manager |
+| PUT | `/api/v1/modules/{moduleId}/items/{itemId}` | Update module item | Yes | Manager |
+| DELETE | `/api/v1/modules/{moduleId}/items/{itemId}` | Delete module item | Yes | Manager |
+| PUT | `/api/v1/modules/{moduleId}/items/reorder` | Reorder module items | Yes | Manager |
 
 ### Enrollment Management
 **📖 Detailed Documentation:** [ENROLLMENT_API.md](./ENROLLMENT_API.md)
@@ -101,10 +110,11 @@ https://localhost:7118/api/v1/enrollments
 |--------|----------|-------------|---------------|------|
 | GET | `/api/v1/enrollments/current` | Get current active enrollment | Yes | Employee |
 | GET | `/api/v1/enrollments/history` | Get enrollment history | Yes | Employee |
+| GET | `/api/v1/enrollments/{id}/progress` | Get enrollment progress | Yes | Employee |
 | POST | `/api/v1/enrollments` | Create new enrollment | Yes | Employee |
 | POST | `/api/v1/enrollments/{id}/items` | Submit checklist item | Yes | Employee |
-| GET | `/api/v1/enrollments/{id}/progress` | Get enrollment progress | Yes | Employee |
 | POST | `/api/v1/enrollments/{id}/resume` | Resume paused enrollment | Yes | Employee |
+| POST | `/api/v1/enrollments/assign` | Assign enrollment to employee | Yes | Manager |
 
 **Key Features:**
 - Single active enrollment policy (one module at a time)
@@ -112,20 +122,23 @@ https://localhost:7118/api/v1/enrollments
 - Auto-pause when enrolling in new module
 - Auto-complete when all items submitted
 - Comprehensive history tracking
+- Manager can assign modules to employees
 
-### Submission Management
+### Submission Management (Manager)
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
 | GET | `/api/v1/submissions` | Get all submissions | Yes | Manager |
-| POST | `/api/v1/submissions/{id}/review` | Review submission | Yes | Manager |
+| GET | `/api/v1/submissions/{id}` | Get submission details | Yes | Manager |
+| PATCH | `/api/v1/submissions/{id}/review` | Review submission | Yes | Manager |
 
 ### Manager Dashboard
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
-| GET | `/api/v1/manager/dashboard` | Get dashboard summary | Yes | Manager |
-| GET | `/api/v1/manager/employees` | Get managed employees | Yes | Manager |
-| GET | `/api/v1/manager/employees/{id}/detail` | Get employee details | Yes | Manager |
-| PATCH | `/api/v1/manager/employees/{id}/status` | Update employee status | Yes | Manager |
+| GET | `/api/v1/dashboard/manager/dashboard` | Get dashboard summary | Yes | Manager |
+| GET | `/api/v1/dashboard/manager/employees` | Get managed employees | Yes | Manager |
+| GET | `/api/v1/dashboard/manager/employees/{id}/detail` | Get employee details | Yes | Manager |
+| GET | `/api/v1/dashboard/manager/enrollments` | Get all enrollments | Yes | Manager |
+| PATCH | `/api/v1/dashboard/employee/{id}/status` | Update employee idle status | Yes | Manager |
 
 ---
 
@@ -272,22 +285,127 @@ Authenticate user and receive JWT token.
 
 ---
 
-#### Change Password
-**PUT** `/api/v1/auth/change-password`
+#### Logout
+**POST** `/api/v1/auth/logout`
 
-Change authenticated user's password.
+Logout user (JWT is stateless, handled client-side).
 
 **Authorization:** Required (Bearer token)
 
-**Full URL:** `https://localhost:7118/api/v1/auth/change-password`
+**Full URL:** `https://localhost:7118/api/v1/auth/logout`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Logged out successfully"
+}
+```
+
+---
+
+#### Get Profile
+**GET** `/api/v1/auth/profile`
+
+Get current authenticated user's profile information.
+
+**Authorization:** Required (Bearer token)
+
+**Full URL:** `https://localhost:7118/api/v1/auth/profile`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "account": {
+      "id": "10000000-0000-0000-0000-000000000001",
+      "email": "john.doe@example.com",
+      "role": "Employee",
+      "isActive": true
+    },
+    "employee": {
+      "id": "20000000-0000-0000-0000-000000000001",
+      "accountId": "10000000-0000-0000-0000-000000000001",
+      "firstName": "John",
+      "lastName": "Doe",
+      "positionId": "30000000-0000-0000-0000-000000000001",
+      "isIdle": false,
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-02T14:30:00Z"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+```json
+// 404 - Employee not found
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Employee not found"
+  }
+}
+```
+
+---
+
+#### Request Password Reset
+**POST** `/api/v1/auth/password/request`
+
+Request password reset via OTP sent to email.
+
+**Authorization:** None required
+
+**Full URL:** `https://localhost:7118/api/v1/auth/password/request`
 
 **Request Body:**
 ```json
 {
-  "currentPassword": "oldPassword123",
-  "newPassword": "newPassword456"
+  "email": "user@example.com"
 }
 ```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "If the email exists, an OTP has been sent."
+}
+```
+
+**Notes:**
+- Always returns 200 to prevent email enumeration
+- OTP is valid for limited time (configured in backend)
+- OTP is sent to registered email address
+
+---
+
+#### Confirm Password Reset
+**POST** `/api/v1/auth/password/confirm`
+
+Confirm password reset using OTP.
+
+**Authorization:** None required
+
+**Full URL:** `https://localhost:7118/api/v1/auth/password/confirm`
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "otp": "123456",
+  "newPassword": "newSecurePassword123"
+}
+```
+
+**Field Validation:**
+- `email`: Required, valid email format
+- `otp`: Required, 6-digit code
+- `newPassword`: Required, minimum 8 characters
 
 **Response (200):**
 ```json
@@ -300,12 +418,12 @@ Change authenticated user's password.
 **Error Responses:**
 
 ```json
-// 400 - Current password incorrect
+// 400 - Invalid OTP
 {
   "success": false,
   "error": {
-    "code": "INVALID_INPUT",
-    "message": "Current password is incorrect"
+    "code": "INVALID_OTP",
+    "message": "Invalid or expired OTP"
   }
 }
 ```
@@ -388,34 +506,30 @@ Create a new user account.
 **Request Body:**
 ```json
 {
-  "email": "newuser@example.com",
-  "password": "initialPassword123",
-  "role": "Employee",
   "firstName": "Jane",
-  "lastName": "Smith"
+  "lastName": "Smith",
+  "email": "newuser@example.com",
+  "password": "securePassword123",
+  "role": "Employee",
+  "positionId": "30000000-0000-0000-0000-000000000001",
+  "isActive": true
 }
 ```
 
 **Field Validation:**
-- `email`: Required, must be valid email format, must be unique
-- `password`: Required, minimum 8 characters, must contain uppercase, lowercase, number
-- `role`: Required, must be one of: Admin, Manager, Employee
 - `firstName`: Required, maximum 100 characters
 - `lastName`: Required, maximum 100 characters
+- `email`: Required, must be valid email format, must be unique
+- `password`: Required, minimum 8 characters
+- `role`: Required, must be one of: Admin, Manager, Employee
+- `positionId`: Optional, must be valid position ID
+- `isActive`: Optional, boolean (default: true)
 
-**Response (201):**
+**Response (200):**
 ```json
 {
   "success": true,
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440002",
-    "email": "newuser@example.com",
-    "role": "Employee",
-    "firstName": "Jane",
-    "lastName": "Smith",
-    "isActive": true
-  },
-  "message": "User created successfully"
+  "message": "Account Success Create"
 }
 ```
 
@@ -491,11 +605,41 @@ Soft delete user account (deactivate).
 **Path Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| id | uuid | User ID |
+| id | uuid | User Account ID |
 
-**Response (204):** No content
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Account Success Delete"
+}
+```
 
 **Note:** User record is not deleted from database, `is_active` flag is set to false
+
+---
+
+#### Activate User
+**PUT** `/api/v1/users/{id}/activate`
+
+Reactivate a deactivated user account.
+
+**Authorization:** Admin only
+
+**Full URL:** `https://localhost:7118/api/v1/users/{id}/activate`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| id | uuid | User Account ID |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Account activated successfully"
+}
+```
 
 ---
 
@@ -513,34 +657,25 @@ Retrieve all job positions.
 **Query Parameters:**
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| page | integer | 1 | Page number |
-| limit | integer | 10 | Items per page |
-| isActive | boolean | true | Filter by active status |
+| isActive | boolean | - | Filter by active status (optional) |
 
 **Response (200):**
 ```json
 {
   "success": true,
-  "data": {
-    "items": [
-      {
-        "id": "660e8400-e29b-41d4-a716-446655440000",
-        "title": "Software Engineer",
-        "isActive": true
-      },
-      {
-        "id": "660e8400-e29b-41d4-a716-446655440001",
-        "title": "Senior Developer",
-        "isActive": true
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 5,
-      "totalPages": 1
+  "data": [
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440000",
+      "title": "Software Engineer",
+      "isActive": true
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "title": "Senior Developer",
+      "isActive": true
     }
-  }
+  ],
+  "total": 10
 }
 ```
 
@@ -563,17 +698,14 @@ Create a new job position.
 ```
 
 **Field Validation:**
-- `title`: Required, maximum 100 characters, must be unique
+- `title`: Optional, maximum 100 characters
+- `isActive`: Optional, boolean
 
-**Response (201):**
+**Response (200):**
 ```json
 {
   "success": true,
-  "data": {
-    "id": "660e8400-e29b-41d4-a716-446655440002",
-    "title": "Senior Developer",
-    "isActive": true
-  }
+  "message": "Position created successfully"
 }
 ```
 
@@ -591,7 +723,8 @@ Update job position details.
 **Request Body:**
 ```json
 {
-  "title": "Lead Developer"
+  "title": "Lead Developer",
+  "isActive": true
 }
 ```
 
@@ -599,11 +732,8 @@ Update job position details.
 ```json
 {
   "success": true,
-  "data": {
-    "id": "660e8400-e29b-41d4-a716-446655440002",
-    "title": "Lead Developer",
-    "isActive": true
-  }
+  "message": "Position update successfully"
+}
 }
 ```
 
@@ -618,7 +748,13 @@ Deactivate a job position.
 
 **Full URL:** `https://localhost:7118/api/v1/positions/{id}`
 
-**Response (204):** No content
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Position deleted successfully"
+}
+```
 
 ---
 
@@ -846,6 +982,253 @@ Activate or deactivate a module.
     "isActive": false
   },
   "message": "Module status updated"
+}
+```
+
+---
+
+#### Get Module Enrollments
+**GET** `/api/v1/modules/{moduleId}/enrollments`
+
+Get all employees enrolled in a specific module.
+
+**Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/modules/{moduleId}/enrollments`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| moduleId | uuid | Module ID |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "moduleId": "770e8400-e29b-41d4-a716-446655440000",
+      "employeeId": "20000000-0000-0000-0000-000000000001",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "positionName": "Software Developer",
+      "isIdle": false,
+      "enrollmentStatus": "OnGoing"
+    }
+  ]
+}
+```
+
+---
+
+#### Get Assignable Modules
+**GET** `/api/v1/modules/assignable`
+
+Get list of modules that can be assigned to a specific employee.
+
+**Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/modules/assignable`
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| employeeAccountId | uuid | Yes | Employee's account ID |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "770e8400-e29b-41d4-a716-446655440000",
+      "title": "Advanced C# Programming",
+      "isAlreadyCompleted": false,
+      "isCurrentlyEnrolled": false
+    },
+    {
+      "id": "770e8400-e29b-41d4-a716-446655440001",
+      "title": "Microservices Architecture",
+      "isAlreadyCompleted": true,
+      "isCurrentlyEnrolled": false
+    }
+  ]
+}
+```
+
+---
+
+#### Add Module Item
+**POST** `/api/v1/modules/{moduleId}/items`
+
+Add a new item to an existing module.
+
+**Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/modules/{moduleId}/items`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| moduleId | uuid | Module ID |
+
+**Request Body:**
+```json
+{
+  "title": "Testing Best Practices",
+  "orderIndex": 3,
+  "descriptions": "Learn unit and integration testing",
+  "url": "https://example.com/testing",
+  "isFinalSubmission": false
+}
+```
+
+**Field Validation:**
+- `title`: Required, 3-200 characters
+- `orderIndex`: Required, must be positive integer
+- `descriptions`: Optional, max 1000 characters
+- `url`: Optional, max 500 characters
+- `isFinalSubmission`: Required, boolean
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "880e8400-e29b-41d4-a716-446655440002",
+    "moduleId": "770e8400-e29b-41d4-a716-446655440000",
+    "title": "Testing Best Practices",
+    "orderIndex": 3,
+    "descriptions": "Learn unit and integration testing",
+    "url": "https://example.com/testing",
+    "isFinalSubmission": false
+  },
+  "message": "Module item added successfully"
+}
+```
+
+---
+
+#### Update Module Item
+**PUT** `/api/v1/modules/{moduleId}/items/{itemId}`
+
+Update an existing module item.
+
+**Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/modules/{moduleId}/items/{itemId}`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| moduleId | uuid | Module ID |
+| itemId | uuid | Module Item ID |
+
+**Request Body:**
+```json
+{
+  "title": "Advanced Testing Strategies",
+  "descriptions": "Learn unit, integration, and E2E testing",
+  "url": "https://example.com/advanced-testing",
+  "isFinalSubmission": false
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "880e8400-e29b-41d4-a716-446655440002",
+    "moduleId": "770e8400-e29b-41d4-a716-446655440000",
+    "title": "Advanced Testing Strategies",
+    "orderIndex": 3,
+    "descriptions": "Learn unit, integration, and E2E testing",
+    "url": "https://example.com/advanced-testing",
+    "isFinalSubmission": false
+  },
+  "message": "Module item updated successfully"
+}
+```
+
+---
+
+#### Delete Module Item
+**DELETE** `/api/v1/modules/{moduleId}/items/{itemId}`
+
+Delete a module item.
+
+**Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/modules/{moduleId}/items/{itemId}`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| moduleId | uuid | Module ID |
+| itemId | uuid | Module Item ID |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Module item deleted successfully"
+}
+```
+
+---
+
+#### Reorder Module Items
+**PUT** `/api/v1/modules/{moduleId}/items/reorder`
+
+Reorder items in a module.
+
+**Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/modules/{moduleId}/items/reorder`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| moduleId | uuid | Module ID |
+
+**Request Body:**
+```json
+{
+  "itemOrders": [
+    {
+      "itemId": "880e8400-e29b-41d4-a716-446655440000",
+      "newOrderIndex": 1
+    },
+    {
+      "itemId": "880e8400-e29b-41d4-a716-446655440001",
+      "newOrderIndex": 2
+    },
+    {
+      "itemId": "880e8400-e29b-41d4-a716-446655440002",
+      "newOrderIndex": 3
+    }
+  ]
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440000",
+      "moduleId": "770e8400-e29b-41d4-a716-446655440000",
+      "title": "Introduction to Microservices",
+      "orderIndex": 1,
+      "descriptions": "Core concepts and patterns",
+      "url": "https://example.com/microservices-intro",
+      "isFinalSubmission": false
+    }
+  ],
+  "message": "Module items reordered successfully"
 }
 ```
 
@@ -1128,7 +1511,63 @@ Resume a paused enrollment.
 
 ---
 
-### Final Submission & Review (Manager)
+#### Assign Enrollment (Manager)
+**POST** `/api/v1/enrollments/assign`
+
+Manager assigns a module to an employee.
+
+**Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/enrollments/assign`
+
+**Request Body:**
+```json
+{
+  "accountId": "10000000-0000-0000-0000-000000000002",
+  "moduleId": "40000000-0000-0000-0000-000000000001"
+}
+```
+
+**Field Validation:**
+- `accountId`: Required, must be valid employee account ID
+- `moduleId`: Required, must be valid and active module ID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "enrollmentId": "60000000-0000-0000-0000-000000000005",
+    "moduleId": "40000000-0000-0000-0000-000000000001",
+    "moduleTitle": "ASP.NET Core Fundamentals",
+    "moduleDescription": "Learn the basics of building web APIs",
+    "startDate": "2025-01-02T10:00:00Z",
+    "targetDate": "2025-02-01T10:00:00Z",
+    "status": "OnGoing",
+    "currentProgress": 0,
+    "sections": []
+  },
+  "message": "Enrollment assigned successfully"
+}
+```
+
+**Business Logic:**
+- Manager can assign modules to employees under their supervision
+- If employee has an active enrollment, it will be auto-paused
+- Employee must not have completed the module already
+
+**Error Responses:**
+```json
+// 403 - Not employee's manager
+{ "success": false, "error": { "code": "FORBIDDEN" } }
+
+// 400 - Module already completed
+{ "success": false, "error": { "code": "MODULE_ALREADY_COMPLETED" } }
+```
+
+---
+
+### Submission Management (Manager)
 
 #### Submit Final Work
 **POST** `/api/v1/enrollments/{id}/submit`
@@ -1218,8 +1657,70 @@ Retrieve all submissions for review.
 
 ---
 
+#### Get Submission Detail
+**GET** `/api/v1/submissions/{id}`
+
+Get detailed information about a specific submission.
+
+**Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/submissions/{id}`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| id | uuid | Submission ID |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "submissionId": "bb0e8400-e29b-41d4-a716-446655440000",
+    "status": "Pending",
+    "employeeName": "John Doe",
+    "email": "john.doe@example.com",
+    "moduleTitle": "ASP.NET Core Fundamentals",
+    "notes": "Completed all requirements",
+    "managerFeedback": null,
+    "completedCount": 5,
+    "totalCount": 5,
+    "sections": [
+      {
+        "orderIndex": 1,
+        "title": "Setup Development Environment",
+        "description": "Install VS Code, .NET SDK",
+        "evidenceUrl": "https://github.com/johndoe/setup",
+        "status": "Completed"
+      },
+      {
+        "orderIndex": 2,
+        "title": "Build First API",
+        "description": "Create REST API",
+        "evidenceUrl": "https://github.com/johndoe/first-api",
+        "status": "Completed"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+```json
+// 404 - Submission not found
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Submission not found"
+  }
+}
+```
+
+---
+
 #### Review Submission
-**POST** `/api/v1/submissions/{id}/review`
+**PATCH** `/api/v1/submissions/{id}/review`
 
 Review and approve/reject a submission.
 
@@ -1236,24 +1737,25 @@ Review and approve/reject a submission.
 ```json
 {
   "status": "Approved",
-  "feedback": "Excellent work! All requirements met and code quality is outstanding."
+  "managerFeedback": "Excellent work! All requirements met and code quality is outstanding.",
+  "estimatedDays": 14
 }
 ```
 
 **Field Validation:**
-- `status`: Required, must be one of: Approved, Rejected
-- `feedback`: Optional, maximum 2000 characters
+- `status`: Required, string (e.g., "Approved", "Rejected")
+- `managerFeedback`: Optional, feedback text
+- `estimatedDays`: Optional, integer for time estimation
 
 **Response (200):**
 ```json
 {
   "success": true,
   "data": {
-    "id": "bb0e8400-e29b-41d4-a716-446655440000",
-    "enrollmentId": "990e8400-e29b-41d4-a716-446655440000",
+    "submissionId": "bb0e8400-e29b-41d4-a716-446655440000",
     "status": "Approved",
     "managerFeedback": "Excellent work! All requirements met and code quality is outstanding.",
-    "reviewedAt": "2025-12-09T11:00:00Z"
+    "estimatedDays": 14
   },
   "message": "Submission reviewed successfully"
 }
@@ -1264,43 +1766,56 @@ Review and approve/reject a submission.
 ### Manager Dashboard (Manager)
 
 #### Get Dashboard Summary
-**GET** `/api/v1/manager/dashboard`
+**GET** `/api/v1/dashboard/manager/dashboard`
 
 Get manager's dashboard with summary statistics.
 
 **Authorization:** Manager only
 
-**Full URL:** `https://localhost:7118/api/v1/manager/dashboard`
+**Full URL:** `https://localhost:7118/api/v1/dashboard/manager/dashboard`
 
 **Response (200):**
 ```json
 {
   "success": true,
-  "data": {
-    "totalEmployees": 15,
-    "activeEnrollments": 8,
-    "completedEnrollments": 12,
-    "pendingSubmissions": 3,
-    "enrollmentsByStatus": {
-      "onGoing": 8,
-      "paused": 2,
-      "completed": 12
-    },
-    "submissionsByStatus": {
-      "pending": 3,
-      "approved": 10,
-      "rejected": 1
+  "data": [
+    {
+      "totalIdle": 3,
+      "totalEnroll": 8,
+      "totalModules": 12,
+      "totalEmployee": 15
     }
-  }
+  ]
 }
 ```
 
 ---
 
 #### Get Managed Employees
-**GET** `/api/v1/manager/employees`
+**GET** `/api/v1/dashboard/manager/employees`
 
 Get list of employees managed by this manager.
+
+**Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/dashboard/manager/employees`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "20000000-0000-0000-0000-000000000001",
+      "accountId": "10000000-0000-0000-0000-000000000001",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "isIdle": false,
+      "isActive": true
+    }
+  ]
+}
 
 **Authorization:** Manager only
 
@@ -1342,13 +1857,13 @@ Get list of employees managed by this manager.
 ---
 
 #### Get Employee Details
-**GET** `/api/v1/manager/employees/{id}/detail`
+**GET** `/api/v1/dashboard/manager/employees/{id}/detail`
 
-Get detailed information about an employee including their enrollments and progress.
+Get detailed information about an employee.
 
 **Authorization:** Manager only
 
-**Full URL:** `https://localhost:7118/api/v1/manager/employees/{id}/detail`
+**Full URL:** `https://localhost:7118/api/v1/dashboard/manager/employees/{id}/detail`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -1360,40 +1875,55 @@ Get detailed information about an employee including their enrollments and progr
 {
   "success": true,
   "data": {
-    "id": "cc0e8400-e29b-41d4-a716-446655440000",
+    "id": "20000000-0000-0000-0000-000000000001",
     "firstName": "John",
     "lastName": "Doe",
-    "email": "john@example.com",
-    "positionTitle": "Software Engineer",
     "isIdle": false,
-    "createdAt": "2025-10-15T08:00:00Z",
-    "enrollments": [
-      {
-        "id": "990e8400-e29b-41d4-a716-446655440000",
-        "moduleName": "Advanced C# Programming",
-        "status": "OnGoing",
-        "currentProgress": 60,
-        "startDate": "2025-12-01T08:00:00Z",
-        "targetDate": "2025-12-15T08:00:00Z"
-      }
-    ],
-    "submissionCount": 5,
-    "approvedSubmissions": 4,
-    "rejectedSubmissions": 1
+    "email": "john.doe@example.com",
+    "role": "Employee",
+    "positionName": "Software Developer"
   }
 }
 ```
 
 ---
 
+#### Get Manager Enrollments
+**GET** `/api/v1/dashboard/manager/enrollments`
+
+Get all enrollments for employees managed by this manager.
+
+**Authorization:** Manager only
+
+**Full URL:** `https://localhost:7118/api/v1/dashboard/manager/enrollments`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "employeeId": "20000000-0000-0000-0000-000000000001",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "isIdle": false,
+      "enrollmentStatus": "OnGoing"
+    }
+  ]
+}
+```
+
+---
+
 #### Update Employee Status
-**PATCH** `/api/v1/manager/employees/{id}/status`
+**PATCH** `/api/v1/dashboard/employee/{id}/status`
 
 Update employee's idle status.
 
 **Authorization:** Manager only
 
-**Full URL:** `https://localhost:7118/api/v1/manager/employees/{id}/status`
+**Full URL:** `https://localhost:7118/api/v1/dashboard/employee/{id}/status`
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -1411,10 +1941,6 @@ Update employee's idle status.
 ```json
 {
   "success": true,
-  "data": {
-    "id": "cc0e8400-e29b-41d4-a716-446655440000",
-    "isIdle": true
-  },
   "message": "Employee status updated"
 }
 ```
