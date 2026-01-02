@@ -63,7 +63,7 @@ Content-Type: application/json
 
 {
   "email": "admin@levelup.com",
-  "password": "Admin123!"
+  "password": "12341234"
 }
 
 ### 1.2 Login as Manager (Auto-save token)
@@ -73,7 +73,7 @@ Content-Type: application/json
 
 {
   "email": "manager@levelup.com",
-  "password": "Manager123!"
+  "password": "12341234"
 }
 
 ### 1.3 Login as Employee (Auto-save token)
@@ -82,8 +82,8 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "employee@levelup.com",
-  "password": "Employee123!"
+  "email": "nabila@levelup.com",
+  "password": "12341234"
 }
 
 ### 1.3.1 Login as Employee2 - Has Completed & Ongoing
@@ -93,7 +93,7 @@ Content-Type: application/json
 
 {
   "email": "employee2@levelup.com",
-  "password": "Employee123!"
+  "password": "12341234"
 }
 
 ### 1.3.2 Login as Employee3 - Has Completed & Paused
@@ -138,6 +138,18 @@ Content-Type: application/json
 @employee4Token = {{employee4Login.response.body.data.token}}
 @employee6Token = {{employee6Login.response.body.data.token}}
 
+### 1.9 Get Profile - Employee (should return account + employee info)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{employeeToken}}
+
+### 1.10 Get Profile - Manager (should return account + employee info)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{managerToken}}
+
+### 1.11 Get Profile - Admin (should return account + employee info)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{adminToken}}
+
 ### 1.4 Login - Invalid Credentials (Should Fail)
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
@@ -146,6 +158,10 @@ Content-Type: application/json
   "email": "invalid@example.com",
   "password": "wrongpassword"
 }
+
+### 1.4.1 Get Profile (Admin)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{managerToken}}
 
 ### 1.5 Change Password (Requires Admin Token)
 PUT {{baseUrl}}/auth/change-password
@@ -317,7 +333,7 @@ GET {{baseUrl}}/modules?page=1&limit=10&isActive=true
 Authorization: Bearer {{managerToken}}
 
 ### 4.3 Get Module by ID - Module 1 (ASP.NET Core)
-GET {{baseUrl}}/modules/40000000-0000-0000-0000-000000000001
+GET {{baseUrl}}/modules/b444f91f-be1b-4d74-910b-35f4a895a3ca
 Authorization: Bearer {{managerToken}}
 
 ### 4.3.1 Get Module Enrollments - See all users enrolled in Module 1
@@ -361,7 +377,7 @@ Authorization: Bearer {{managerToken}}
 
 ### 4.5 Update Module - Without Enrollments (Should Succeed)
 # Test updating all fields when module has no enrollments (Module 3 is inactive)
-PUT {{baseUrl}}/modules/40000000-0000-0000-0000-000000000003
+PUT {{baseUrl}}/modules/b444f91f-be1b-4d74-910b-35f4a895a3ca
 Content-Type: application/json
 Authorization: Bearer {{managerToken}}
 

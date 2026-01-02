@@ -10,6 +10,7 @@ public interface IModuleService
   Task<ModuleResponse> CreateAsync(CreateModuleRequest request, Guid managerId);
   Task<ModuleResponse?> UpdateAsync(Guid id, UpdateModuleRequest request, Guid managerId);
   Task<List<ModuleEnrollmentUserResponse>> GetModuleEnrollmentsAsync(Guid moduleId);
+  Task<List<AssignableModuleResponse>> GetAssignableModulesAsync(Guid accountId, CancellationToken cancellationToken);
 
   // Module Items Management
   Task<ModuleItemResponse> AddItemAsync(Guid moduleId, DTOs.Modules.CreateModuleItemRequest request, Guid creatorId);

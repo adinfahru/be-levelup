@@ -89,6 +89,21 @@ public class ModulesController : ControllerBase
         return Ok(new ApiResponse<ModuleResponse>(module));
     }
 
+    [HttpGet("assignable")]
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> GetAssignableModules(
+    [FromQuery] Guid employeeAccountId,
+    CancellationToken cancellationToken)
+    {
+        var modules = await _moduleService.GetAssignableModulesAsync(
+            employeeAccountId,
+            cancellationToken
+        );
+
+        return Ok(new ApiResponse<List<AssignableModuleResponse>>(modules));
+    }
+
+
     // ============= MODULE ITEMS ENDPOINTS =============
 
     [HttpPost("{moduleId}/items")]

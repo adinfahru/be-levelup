@@ -55,4 +55,16 @@ public class EnrollmentRepository : Repository<Enrollment>, IEnrollmentRepositor
             e.Status == EnrollmentStatus.Completed,
             cancellationToken);
     }
+
+    public async Task<List<Guid>> GetCompletedModuleIdsAsync(
+    Guid accountId,
+    CancellationToken cancellationToken)
+    {
+        return await _context.Enrollments
+            .Where(e =>
+                e.AccountId == accountId &&
+                e.Status == EnrollmentStatus.Completed)
+            .Select(e => e.ModuleId)
+            .ToListAsync(cancellationToken);
+    }
 }
